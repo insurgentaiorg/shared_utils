@@ -20,5 +20,5 @@ dependencies = [
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[tool.setuptools.packages.find]
-where = ["shared_utils"]
+[tool.setuptools]
+packages = ["shared_utils"]
