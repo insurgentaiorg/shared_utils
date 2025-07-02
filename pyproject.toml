@@ -7,7 +7,7 @@ name = "shared_utils"
 version = "0.1.0"
 description = "A collection of shared utility functions for InsurgentAI microservices."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 
 # Core dependencies that your package needs to run.
 # Use PEP 508 syntax for specifying dependencies and versions.
