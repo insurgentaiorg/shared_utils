@@ -1,13 +1,13 @@
 import os
 import json
-from quixstreams import Application, ProduceToTopic
+from quixstreams import Application
 
 class KafkaClient:
     def __init__(self):
         self.broker_address = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
         self.client_id = os.getenv("KAFKA_CLIENT_ID", "default-client")
         self._app = None
-        self._producers = {}  # dict[str, ProduceToTopic]
+        self._producers = {}
         self._consumers = {}
         self._callbacks = {}
 
