@@ -21,7 +21,7 @@ class _DBClient:
         if not all([user, password, dbname]):
             raise EnvironmentError("Missing required Postgres environment variables")
 
-        self.database_url = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+        self.database_url = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
         self.engine = create_engine(self.database_url, echo=False)
 
     @contextmanager
