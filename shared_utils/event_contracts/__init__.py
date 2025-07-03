@@ -1,0 +1,7 @@
+#exposes all event contracts for easy import
+from .AllChunksProcessedEvent import AllChunksProcessedEvent
+from .DocumentChunkingFinishedEvent import DocumentChunkingFinishedEvent
+from .DocumentIngestionFinalized import DocumentIngestionFinalizedEvent
+from .DocumentUploadedEvent import DocumentUploadedEvent
+from .KnowledgeGraphUpdatedEvent import KnowledgeGraphUpdatedEvent
+from .ProcessChunkRequestEvent import ProcessChunkRequestEvent
