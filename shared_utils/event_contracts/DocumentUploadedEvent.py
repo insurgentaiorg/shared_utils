@@ -1,0 +1,2 @@
+
+## pydantic definition of DocumentUploadedEvent
