@@ -4,4 +4,4 @@ class DocumentUploadedEvent(BaseModel):
     """
     Event triggered when a document is uploaded.
     """
-    s3_key: str = Field(..., description="The S3 key of the uploaded document.")
+    id: str = Field(..., description="The S3 key of the uploaded document.")
