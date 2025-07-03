@@ -8,6 +8,8 @@ class KafkaClient:
         self.client_id = os.getenv("KAFKA_CLIENT_ID", "default-client")
         self._app = None
         self._producers = {}  # dict[str, ProduceToTopic]
+        self._consumers = {}
+        self._callbacks = {}
 
     @property
     def app(self):
@@ -29,5 +31,32 @@ class KafkaClient:
     def flush(self):
         for producer in self._producers.values():
             producer.flush()
+
+    def register_callback(self, topic: str, group_id: str, callback):
+        """
+        Register a callback function to be called on each message consumed from `topic`.
+        `callback` signature: func(key: bytes|None, value: dict) -> None
+        """
+
+        if topic in self._consumers:
+            # Already registered consumer for this topic, add callback
+            self._callbacks[topic].append(callback)
+            return
+
+        topic_obj = self.app.topic(topic)
+        consumer = topic_obj.get_consumer(group_id=group_id)
+        self._consumers[topic] = consumer
+        self._callbacks[topic] = [callback]
+
+        def on_message(msg):
+            try:
+                val = json.loads(msg.value.decode("utf-8"))
+            except Exception:
+                val = None
+            for cb in self._callbacks[topic]:
+                cb(msg.key, val)
+
+        consumer.set_message_callback(on_message)
+        consumer.start()
 
 kafka_client = KafkaClient()
