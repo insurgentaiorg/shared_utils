@@ -1,3 +1,3 @@
 #!/bin/bash
 rm -rf dist/*
-pip -m build . --wheel
+python3 -m build . --wheel
