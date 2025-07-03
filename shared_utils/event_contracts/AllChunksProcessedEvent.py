@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-class AllChunkProcessedEvent(BaseModel):
+class AllChunksProcessedEvent(BaseModel):
     """
     Event triggered when the processing of all chunks associated with a document is finished.
     """
