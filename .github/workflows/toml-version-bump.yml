@@ -1,0 +1,25 @@
+name: Bump Version on Main Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false  # Required for push after checkout
+
+      - name: bump2version-action
+        uses: FragileTech/bump-version@v1.0.4
+        with:
+          current_version: 0.1.4
+          files: pyproject.toml
+          commit_name: github-actions
+          commit_email: github-actions@github.com
+          login: ${{ github.actor }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          part: patch
