@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shared_utils"
-version = "0.1.6"
+version = "0.1.7"
 description = "A collection of shared utility functions for InsurgentAI microservices."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,7 +14,8 @@ requires-python = ">=3.12"
 dependencies = [
     "psycopg[binary,pool]>=3.2.6",
     "pydantic>=2.11.7",
-    "sqlmodel>=0.0.24"
+    "sqlmodel>=0.0.24",
+    "quixstreams==3.17.0"
 ]
 
 # Needed to build with hatchling
