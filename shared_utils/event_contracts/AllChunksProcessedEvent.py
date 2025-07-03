@@ -1,0 +1,7 @@
+from pydantic import BaseModel, Field
+
+class AllChunkProcessedEvent(BaseModel):
+    """
+    Event triggered when the processing of all chunks associated with a document is finished.
+    """
+    document_id: str = Field(..., description="The document_id of the document associated with the processed chunks.")
