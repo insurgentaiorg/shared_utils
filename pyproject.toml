@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "shared_utils"
-version = "0.2.1"
+name = "insurgentai_shared_utils"
+version = "0.2.3"
 description = "A collection of shared utility functions for InsurgentAI microservices."
 readme = "README.md"
 requires-python = ">=3.12"
