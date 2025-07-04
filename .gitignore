@@ -3,3 +3,8 @@
 insurgentai_shared_utils.egg-info/
 dist/
 build/
+
+__pycache__/
+
+pypi_api_token.txt
+set_db_vars.sh
