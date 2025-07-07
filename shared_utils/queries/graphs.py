@@ -2,6 +2,19 @@ from typing import Optional
 from sqlmodel import Session, select
 from shared_utils.sql_models import Graph
 
+def insert_graph(session: Session, graph: Graph) -> None:
+    """
+    Inserts a new graph into the database.
+
+    Args:
+        session (Session): The session to use for the insert operation.
+        graph (Graph): The graph object to insert.
+
+    Returns:
+        None
+    """
+    session.add(graph)
+    session.commit()
 
 def get_graph(session: Session, graph_id: str) -> Optional[dict]:
     """

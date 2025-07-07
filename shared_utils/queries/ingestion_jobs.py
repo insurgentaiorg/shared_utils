@@ -1,6 +1,20 @@
 from sqlmodel import Session, select
 from shared_utils.sql_models import IngestionJob
 
+def insert_ingestion_job(session: Session, ingestion_job: IngestionJob) -> None:
+    """
+    Inserts a new ingestion job into the database.
+
+    Args:
+        session (Session): The session to use for the insert operation.
+        ingestion_job (IngestionJob): The ingestion job object to insert.
+
+    Returns:
+        None
+    """
+    session.add(ingestion_job)
+    session.commit()
+
 def get_ingestion_job(session: Session, job_id: str) -> IngestionJob:
     """
     Retrieves an ingestion job by its ID.
@@ -16,27 +30,44 @@ def get_ingestion_job(session: Session, job_id: str) -> IngestionJob:
     result = session.exec(statement).first()
     return result if result else None
 
-def update_ingestion_job(session: Session, job_id: str, status: str, content: dict = None) -> IngestionJob:
+def update_ingestion_job_status(session: Session, job_id: str, status: str) -> None:
     """
-    Updates the status and content of an ingestion job.
+    Updates the status of an ingestion job.
 
     Args:
-        session (Session): The session to use for the query.
+        session (Session): The session to use for the update operation.
         job_id (str): The ID of the ingestion job to update.
-        status (str): The new status of the ingestion job.
-        content (dict, optional): The content of the job if it is completed successfully. Defaults to None.
+        status (str): The new status to set for the ingestion job.
 
     Returns:
-        IngestionJob: The updated ingestion job.
+        None
     """
-    job = get_ingestion_job(session, job_id)
-    if not job:
+    statement = select(IngestionJob).where(IngestionJob.job_id == job_id)
+    ingestion_job = session.exec(statement).first()
+    
+    if ingestion_job:
+        ingestion_job.status = status
+        session.commit()
+    else:
         raise ValueError(f"Ingestion job with ID {job_id} not found.")
     
-    job.status = status
-    job.content = content
-    session.add(job)
-    session.commit()
-    session.refresh(job)
+def update_ingestion_job_content(session: Session, job_id: str, content: str) -> None:
+    """
+    Updates the content of an ingestion job.
+
+    Args:
+        session (Session): The session to use for the update operation.
+        job_id (str): The ID of the ingestion job to update.
+        content (str): The new content to set for the ingestion job.
+
+    Returns:
+        None
+    """
+    statement = select(IngestionJob).where(IngestionJob.job_id == job_id)
+    ingestion_job = session.exec(statement).first()
     
-    return job
+    if ingestion_job:
+        ingestion_job.content = content
+        session.commit()
+    else:
+        raise ValueError(f"Ingestion job with ID {job_id} not found.")

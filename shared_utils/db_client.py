@@ -1,8 +1,28 @@
 import os
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from sqlmodel import Session, create_engine
+from typing import Any
 
-class _DBClient:
+class DBClientBase(ABC):
+    """Abstract base class for database clients."""
+    
+    @abstractmethod
+    def __init__(self):
+        """Initialize the database client with connection parameters."""
+        pass
+    
+    @abstractmethod
+    def scoped_session(self):
+        """Context manager for scoped database operations with auto commit/rollback/close."""
+        pass
+    
+    @abstractmethod
+    def get_persistent_session(self):
+        """Get a persistent session/connection that caller must manage."""
+        pass
+
+class _DBClient(DBClientBase):
     """Database client for connecting to a Postgres database.
     Requires environment variables:
     - POSTGRES_USER: The username for the database.
@@ -18,8 +38,15 @@ class _DBClient:
         port = os.getenv("POSTGRES_PORT", "5432")
         dbname = os.getenv("POSTGRES_DB")
 
-        if not all([user, password, dbname]):
-            raise EnvironmentError("Missing required Postgres environment variables")
+        if not user:
+            raise EnvironmentError("Missing user Postgres environment variables")
+        if not password:
+            raise EnvironmentError("Missing pwd Postgres environment variables")
+        if not dbname:
+            raise EnvironmentError("Missing dbname Postgres environment variables")
+        
+        # if not all([user, password, dbname]):
+            # raise EnvironmentError("Missing required Postgres environment variables")
 
         self.database_url = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
         self.engine = create_engine(self.database_url, echo=False)
@@ -42,28 +69,5 @@ class _DBClient:
         return Session(self.engine)
 
     # Operations
-
-    # insert document metadata
-    # get document metadata
-    # update document status
-    
-    # insert chunk in database
-    # get chunk from database
-    # update chunk graph id
-    
-    # insert graph in database
-    # get graph from database
-
-    #TODO: plan where AGE db client goes, here?
-
-    # insert ingestion job
-    # get ingestion job
-    # update ingestion job status
-
-    # insert labels
-    # get labels
-
-    # insert layouts
-    # get layout
 
 db_client = _DBClient() # module level singleton instance
