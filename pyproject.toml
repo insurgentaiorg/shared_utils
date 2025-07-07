@@ -12,6 +12,7 @@ requires-python = ">=3.12"
 # Core dependencies that your package needs to run.
 # Use PEP 508 syntax for specifying dependencies and versions.
 dependencies = [
+    "fastapi[standard]>=0.115.12",
     "psycopg[binary,pool]>=3.2.6",
     "pydantic>=2.11.7",
     "sqlmodel>=0.0.24",
