@@ -13,4 +13,3 @@ class Chunk(SQLModel, table=True):
     tags: list[dict] = Field(default_factory=list, sa_column=Column(JSON), description="List of tags associated with the chunk.")
     #TODO: consider making graph_id an index if performance is an issue
     graph_id : Optional[UUID] = Field(default=None, description="The unique identifier for the graph associated with the chunk.")
-    status: str = Field(..., description="The processing status of the chunk, e.g., 'pending', 'processed', 'failed'.")

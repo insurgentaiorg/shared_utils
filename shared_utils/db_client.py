@@ -41,4 +41,29 @@ class _DBClient:
         """Caller is responsible for commit/rollback/close."""
         return Session(self.engine)
 
+    # Operations
+
+    # insert document metadata
+    # get document metadata
+    # update document status
+    
+    # insert chunk in database
+    # get chunk from database
+    # update chunk graph id
+    
+    # insert graph in database
+    # get graph from database
+
+    #TODO: plan where AGE db client goes, here?
+
+    # insert ingestion job
+    # get ingestion job
+    # update ingestion job status
+
+    # insert labels
+    # get labels
+
+    # insert layouts
+    # get layout
+
 db_client = _DBClient() # module level singleton instance
