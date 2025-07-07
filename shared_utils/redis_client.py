@@ -4,13 +4,22 @@ import redis
 import threading
 from typing import Optional, Union, Any
 
-class _RedisClient:
+class RedisClient:
     def __init__(self):
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self._client = redis.from_url(redis_url)
         self._consumers = {}
         self._callbacks = {}
         self._stop_flags = {}
+
+    def send(self, stream: str, value: dict):
+        # Serialize entire dict as single JSON string under 'data' field
+        message = {"data": json.dumps(value)}
+        self._client.xadd(stream, message)
+
+    def flush(self):
+        # No flush needed for Redis Streams
+        pass
 
     # Key-Value Operations
     def get(self, key: str) -> Optional[str]:
@@ -23,6 +32,24 @@ class _RedisClient:
         try:
             return self._client.set(key, str(value), ex=ex)
         except Exception:
+            return False
+
+    def get_json(self, key: str) -> Optional[Any]:
+        """Get a JSON value from Redis by key and deserialize it."""
+        value = self.get(key)
+        if value is None:
+            return None
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return None
+
+    def set_json(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
+        """Set a JSON-serializable value in Redis."""
+        try:
+            json_str = json.dumps(value)
+            return self.set(key, json_str, ex=ex)
+        except (TypeError, ValueError):
             return False
 
     def increment(self, key: str, amount: int = 1) -> int:
@@ -49,22 +76,7 @@ class _RedisClient:
         """Get the time-to-live of a key in seconds."""
         return self._client.ttl(key)
 
-    def publish(self, stream: str, value: dict):
-        """Publish a message to a Redis Stream."""
-        # Serialize entire dict as single JSON string under 'data' field
-        message = {"data": json.dumps(value)}
-        self._client.xadd(stream, message)
-
-    def register_callback(self, stream: str, group_id: str, callback, block_ms: int = 1000):
-        """
-        Register a callback function to process messages from a Redis Stream.
-        
-        Args:
-            stream: The Redis Stream name
-            group_id: The consumer group ID
-            callback: Function to call for each message (receives msg_id, data)
-            block_ms: Polling timeout in milliseconds (default: 1000ms = 1 second)
-        """
+    def register_callback(self, stream: str, group_id: str, callback):
         if stream in self._consumers:
             self._callbacks[stream].append(callback)
             return
@@ -86,7 +98,7 @@ class _RedisClient:
                     consumername=consumer_name,
                     streams={stream: '>'},
                     count=10,
-                    block=block_ms
+                    block=1000
                 )
                 if not resp:
                     continue
@@ -116,4 +128,4 @@ class _RedisClient:
             del self._callbacks[stream]
             del self._stop_flags[stream]
 
-redis_client = _RedisClient()
+redis_client = RedisClient()
