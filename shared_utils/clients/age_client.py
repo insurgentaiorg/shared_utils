@@ -1,9 +1,9 @@
 import os
+from typing import Optional, Dict, Any, List
 from contextlib import contextmanager
 import psycopg
 from psycopg.rows import dict_row
 from psycopg import Connection
-from typing import Optional, Dict, Any, List
 from .db_client import DBClientBase
 
 class _AGEClient(DBClientBase):

@@ -1,26 +1,7 @@
 import os
-from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from sqlmodel import Session, create_engine
-from typing import Any
-
-class DBClientBase(ABC):
-    """Abstract base class for database clients."""
-    
-    @abstractmethod
-    def __init__(self):
-        """Initialize the database client with connection parameters."""
-        pass
-    
-    @abstractmethod
-    def scoped_session(self):
-        """Context manager for scoped database operations with auto commit/rollback/close."""
-        pass
-    
-    @abstractmethod
-    def get_persistent_session(self):
-        """Get a persistent session/connection that caller must manage."""
-        pass
+from .db_client_base import DBClientBase
 
 class _DBClient(DBClientBase):
     """Database client for connecting to a Postgres database.
@@ -38,15 +19,8 @@ class _DBClient(DBClientBase):
         port = os.getenv("POSTGRES_PORT", "5432")
         dbname = os.getenv("POSTGRES_DB")
 
-        if not user:
-            raise EnvironmentError("Missing user Postgres environment variables")
-        if not password:
-            raise EnvironmentError("Missing pwd Postgres environment variables")
-        if not dbname:
-            raise EnvironmentError("Missing dbname Postgres environment variables")
-        
-        # if not all([user, password, dbname]):
-            # raise EnvironmentError("Missing required Postgres environment variables")
+        if not all([user, password, dbname]):
+            raise EnvironmentError("Missing required Postgres environment variables")
 
         self.database_url = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
         self.engine = create_engine(self.database_url, echo=False)
@@ -68,6 +42,5 @@ class _DBClient(DBClientBase):
         """Caller is responsible for commit/rollback/close."""
         return Session(self.engine)
 
-    # Operations
 
 db_client = _DBClient() # module level singleton instance
