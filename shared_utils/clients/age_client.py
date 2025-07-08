@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import psycopg
 from psycopg.rows import dict_row
 from psycopg import Connection
-from .db_client import DBClientBase
+from .utils.db_client_base import DBClientBase
 
 class AGEClient(DBClientBase):
     """AGE client for connecting to a PostgreSQL database with Apache AGE extension.
@@ -64,6 +64,15 @@ class AGEClient(DBClientBase):
         except Exception:
             # AGE might not be properly installed
             pass
+
+    def get_graph_name(self) -> str:
+        """Get the configured graph name."""
+        return self.graph_name
+
+    def execute_with_graph(self, func, *args, **kwargs):
+        """Execute a function with a scoped connection and graph name."""
+        with self.scoped_session() as conn:
+            return func(conn, self.graph_name, *args, **kwargs)
 
     def load_age_extension(self) -> bool:
         """Load the AGE extension (legacy method - now handled automatically)."""

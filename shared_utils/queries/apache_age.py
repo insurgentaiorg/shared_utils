@@ -5,9 +5,9 @@ from psycopg import Connection
 # AGE-specific operations
 def execute_cypher(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:
     """Execute a Cypher query and return results."""
+    # Prepare the AGE query
+    age_query = f"SELECT * FROM cypher('{graph_name}', $${query}$$) as (result agtype);"
     with conn.cursor() as cur:
-        # Prepare the AGE query
-        age_query = f"SELECT * FROM cypher('{graph_name}', $${query}$$) as (result agtype);"
         cur.execute(age_query, params or {})
         return cur.fetchall()
 
@@ -19,8 +19,9 @@ def execute_cypher_single(conn: Connection, graph_name: str, query: str, params:
 def create_graph(conn: Connection, graph_name: str) -> bool:
     """Create the AGE graph if it doesn't exist."""
     try:
+        query = f"SELECT create_graph('{graph_name}');"
         with conn.cursor() as cur:
-            cur.execute(f"SELECT create_graph('{graph_name}');")
+            cur.execute(query)
         return True
     except Exception:
         # Graph might already exist
@@ -29,8 +30,9 @@ def create_graph(conn: Connection, graph_name: str) -> bool:
 def drop_graph(conn: Connection, graph_name: str) -> bool:
     """Drop the AGE graph."""
     try:
+        query = f"SELECT drop_graph('{graph_name}', true);"
         with conn.cursor() as cur:
-            cur.execute(f"SELECT drop_graph('{graph_name}', true);")
+            cur.execute(query)
         return True
     except Exception:
         return False
