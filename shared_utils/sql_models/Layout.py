@@ -1,6 +1,6 @@
 from uuid import UUID
 from sqlmodel import SQLModel, Field
-from sqlalchemy import JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Layout(SQLModel, table=True):
     """Represents a layout for a graph, storing the positions of nodes in a 2D space."""

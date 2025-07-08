@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from sqlalchemy import JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 
 class IngestionJob(SQLModel, table=True):
     """

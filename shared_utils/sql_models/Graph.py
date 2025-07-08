@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field
-from sqlalchemy import JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 from uuid import UUID
 
 class Graph(SQLModel, table=True):
