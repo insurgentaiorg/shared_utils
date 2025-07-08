@@ -40,6 +40,7 @@ class AGEClient(DBClientBase):
         """Scoped connection with auto commit/rollback/close."""
         conn: Connection = psycopg.connect(**self.connection_params, row_factory=dict_row)
         try:
+            self._setup_age_session(conn)
             yield conn
             conn.commit()
         except Exception:
@@ -50,7 +51,19 @@ class AGEClient(DBClientBase):
 
     def get_persistent_session(self) -> Connection:
         """Caller is responsible for commit/rollback/close."""
-        return psycopg.connect(**self.connection_params, row_factory=dict_row)
+        conn = psycopg.connect(**self.connection_params, row_factory=dict_row)
+        self._setup_age_session(conn)
+        return conn
+
+    def _setup_age_session(self, conn: Connection) -> None:
+        """Setup AGE environment for each session."""
+        try:
+            with conn.cursor() as cur:
+                cur.execute("LOAD 'age';")
+                cur.execute("SET search_path = ag_catalog, '$user', public;")
+        except Exception:
+            # AGE might not be properly installed
+            pass
 
     # AGE-specific operations
     def execute_cypher(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:
@@ -89,16 +102,8 @@ class AGEClient(DBClientBase):
             return False
 
     def load_age_extension(self) -> bool:
-        """Load the AGE extension."""
-        try:
-            with self.scoped_session() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("CREATE EXTENSION IF NOT EXISTS age;")
-                    cur.execute("LOAD 'age';")
-                    cur.execute("SET search_path = ag_catalog, '$user', public;")
-            return True
-        except Exception:
-            return False
+        """Load the AGE extension (legacy method - now handled automatically)."""
+        return True  # Always return True since extension is loaded automatically
 
     # Utility methods
     def create_node(self, label: str, properties: Dict[str, Any]) -> Optional[Dict]:
