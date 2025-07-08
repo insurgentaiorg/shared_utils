@@ -1,9 +1,9 @@
 import os
 from contextlib import contextmanager
 from sqlmodel import Session, create_engine
-from .db_client_base import DBClientBase
+from .utils.db_client_base import DBClientBase
 
-class _DBClient(DBClientBase):
+class DBClient(DBClientBase):
     """Database client for connecting to a Postgres database.
     Requires environment variables:
     - POSTGRES_USER: The username for the database.
@@ -43,4 +43,6 @@ class _DBClient(DBClientBase):
         return Session(self.engine)
 
 
-db_client = _DBClient() # module level singleton instance
+def create_db_client() -> DBClient:
+    """Factory function to create a singleton DB client instance."""
+    return DBClient()

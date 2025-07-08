@@ -1,6 +1,6 @@
 import boto3
 
-class _S3Client: # Singleton class, wrapper for S3 operations
+class S3Client: # Singleton class, wrapper for S3 operations
 
     def __init__(self, region_name:str='us-east-1'):
         session = boto3.Session()
@@ -30,5 +30,6 @@ class _S3Client: # Singleton class, wrapper for S3 operations
             print(f"Download failed: {e}")
             return False
         
-
-s3_client = _S3Client()  # Create a module-level singleton instance of _S3Client
+def create_s3_client() -> S3Client:
+    """Factory function to create a singleton S3 client instance."""
+    return S3Client()

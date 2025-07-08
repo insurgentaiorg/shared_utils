@@ -6,7 +6,7 @@ from psycopg.rows import dict_row
 from psycopg import Connection
 from .db_client import DBClientBase
 
-class _AGEClient(DBClientBase):
+class AGEClient(DBClientBase):
     """AGE client for connecting to a PostgreSQL database with Apache AGE extension.
     Requires environment variables:
     - AGE_USER: The username for the AGE database.
@@ -137,4 +137,6 @@ class _AGEClient(DBClientBase):
         query += " RETURN n"
         return self.execute_cypher(query)
 
-age_client = _AGEClient()  # module level singleton instance
+def create_age_client() -> AGEClient:
+    """Factory function to create a singleton AGE client instance."""
+    return AGEClient()

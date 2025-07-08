@@ -5,5 +5,5 @@ class UserPromptResponse(BaseModel):
     Response model for user prompt operations.
     """
     response: str = Field(..., description="The response generated based on the user's prompt.")
-    #statements
-    #references
+    #TODO: statements
+    #TODO: references

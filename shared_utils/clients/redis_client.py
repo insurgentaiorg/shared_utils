@@ -128,4 +128,6 @@ class RedisClient:
             del self._callbacks[stream]
             del self._stop_flags[stream]
 
-redis_client = RedisClient()
+def create_redis_client() -> RedisClient:
+    """Factory function to create a singleton Redis client instance."""
+    return RedisClient()
