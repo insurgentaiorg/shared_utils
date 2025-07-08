@@ -17,34 +17,34 @@ def insert_document(session: Session, document_metadata: DocumentMetadata) -> No
     session.add(document_metadata)
     session.commit()
 
-def get_document(session: Session, document_id: str) -> Optional[dict]:
+def get_document(session: Session, document_id: UUID) -> Optional[DocumentMetadata]:
     """
     Retrieves a document by its ID.
 
     Args:
         session (Session): The session to use for the query.
-        document_id (str): The ID of the document to retrieve.
+        document_id (UUID): The ID of the document to retrieve.
 
     Returns:
-        Optional[dict]: The document metadata if found, otherwise None.
+        Optional[DocumentMetadata]: The document metadata if found, otherwise None.
     """
-    statement = select(DocumentMetadata).where(DocumentMetadata.document_id == UUID(document_id))
+    statement = select(DocumentMetadata).where(DocumentMetadata.document_id == document_id)
     result = session.exec(statement).first()
     return result if result else None
 
-def update_document_status(session: Session, document_id: str, status: str) -> None:
+def update_document_status(session: Session, document_id: UUID, status: str) -> None:
     """
     Updates the status of a document.
 
     Args:
         session (Session): The session to use for the update operation.
-        document_id (str): The ID of the document to update.
+        document_id (UUID): The ID of the document to update.
         status (str): The new status to set for the document.
 
     Returns:
         None
     """
-    statement = select(DocumentMetadata).where(DocumentMetadata.document_id == UUID(document_id))
+    statement = select(DocumentMetadata).where(DocumentMetadata.document_id == document_id)
     document = session.exec(statement).first()
     
     if document:
