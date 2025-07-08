@@ -4,4 +4,3 @@ from .DocumentMetadata import DocumentMetadata
 from .Graph import Graph
 from .IngestionJob import IngestionJob
 from .Layout import Layout
-from .Label import Label
