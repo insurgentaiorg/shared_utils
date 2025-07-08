@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 from sqlmodel import Session, select
 from shared_utils.sql_models import Graph
 
@@ -16,16 +17,16 @@ def insert_graph(session: Session, graph: Graph) -> None:
     session.add(graph)
     session.commit()
 
-def get_graph(session: Session, graph_id: str) -> Optional[dict]:
+def get_graph(session: Session, graph_id: UUID) -> Optional[Graph]:
     """
     Retrieves a graph by its ID.
 
     Args:
         session (Session): The session to use for the query.
-        graph_id (str): The ID of the graph to retrieve.
+        graph_id (UUID): The ID of the graph to retrieve.
 
     Returns:
-        Optional[dict]: The graph data if found, otherwise None.
+        Optional[Graph]: The graph data if found, otherwise None.
     """
     statement = select(Graph).where(Graph.graph_id == graph_id)
     result = session.exec(statement).first()
