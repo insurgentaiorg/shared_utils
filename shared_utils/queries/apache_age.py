@@ -2,9 +2,6 @@ from typing import Optional, Dict, Any, List
 from psycopg import Connection
 
 
-#TODO: pull out session, use connection only in functions,
-
-
 # AGE-specific operations
 def execute_cypher(conn:Connection, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:
     """Execute a Cypher query and return results."""
