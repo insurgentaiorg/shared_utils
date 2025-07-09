@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from sqlmodel import Session, select
 from shared_utils.sql_models import DocumentMetadata
@@ -31,6 +31,20 @@ def get_document(session: Session, document_id: UUID) -> Optional[DocumentMetada
     statement = select(DocumentMetadata).where(DocumentMetadata.document_id == document_id)
     result = session.exec(statement).first()
     return result if result else None
+
+def get_all_documents(session: Session) -> List[DocumentMetadata]:
+    """
+    Retrieves all document metadata entries from the database.
+
+    Args:
+        session (Session): The session to use for the query.
+
+    Returns:
+        List[DocumentMetadata]: A list of all document metadata entries.
+    """
+    statement = select(DocumentMetadata)
+    result = session.exec(statement).all()
+    return result
 
 def update_document_status(session: Session, document_id: UUID, status: str) -> None:
     """
