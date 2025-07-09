@@ -7,18 +7,14 @@ This demonstrates the proper separation of concerns:
 """
 
 from uuid import uuid4
-from shared_utils.clients.db_client import create_db_client
-from shared_utils.clients.age_client import create_age_client
+from shared_utils.clients import db_client
+from shared_utils.clients import age_client
 from shared_utils.sql_models import DocumentMetadata
 from shared_utils.queries import documents, apache_age
 
 
 def comprehensive_example():
     """Example showing both regular database and AGE graph operations."""
-    
-    # Create clients
-    db_client = create_db_client()
-    age_client = create_age_client()
     
     # Regular database operations using SQLModel Session
     print("=== Regular Database Operations ===")

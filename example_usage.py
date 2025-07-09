@@ -5,15 +5,12 @@ This demonstrates the correct way to use the AGE client and query functions
 together, ensuring compatibility between psycopg Connection and the query functions.
 """
 
-from shared_utils.clients.age_client import create_age_client
+from shared_utils.clients import age_client
 from shared_utils.queries import apache_age
 
 
 def example_usage():
     """Example of how to use AGEClient with apache_age functions."""
-    
-    # Create the AGE client
-    age_client = create_age_client()
     
     # Method 1: Using scoped session (recommended)
     print("Method 1: Using scoped session")
