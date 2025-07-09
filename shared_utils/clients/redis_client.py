@@ -12,8 +12,8 @@ class RedisClient:
         self._callbacks = {}
         self._stop_flags = {}
 
-    def send(self, stream: str, value: dict):
-        # Serialize entire dict as single JSON string under 'data' field
+    def send(self, stream: str, value: Any):
+        # Serialize entire object as single JSON string under 'data' field
         message = {"data": json.dumps(value)}
         self._client.xadd(stream, message)
 
