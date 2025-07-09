@@ -7,3 +7,4 @@ class KnowledgeGraphVisualsGeneratedEvent(BaseModel):
     This event is used to notify that the visuals for the knowledge graph have been successfully created.
     """
     job_id: UUID = Field(..., description="Unique identifier for the job associated with the document ingestion")
+    document_id: UUID = Field(..., description="The id of the document associated with the generated visuals.")
