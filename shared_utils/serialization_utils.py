@@ -15,3 +15,6 @@ def deserialize_event(contract_class):
             return callback_fn(obj)
         return wrapper
     return decorator
+
+def to_db_repr(string):
+    return string.replace("'", '"').replace("\\", "/")
