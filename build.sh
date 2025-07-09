@@ -1,5 +1,5 @@
 #!/bin/bash
 rm -rf dist/*
-rm -rg build/*
+rm -rf build/*
 
 python3 -m build . --wheel
