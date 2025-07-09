@@ -79,6 +79,4 @@ class AGEClient(DBClientBase):
         return True  # Always return True since extension is loaded automatically
 
 
-def create_age_client() -> AGEClient:
-    """Factory function to create a singleton AGE client instance."""
-    return AGEClient()
+age_client = AGEClient()  # module level singleton instance

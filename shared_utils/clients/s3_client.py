@@ -30,6 +30,4 @@ class S3Client: # Singleton class, wrapper for S3 operations
             print(f"Download failed: {e}")
             return False
         
-def create_s3_client() -> S3Client:
-    """Factory function to create a singleton S3 client instance."""
-    return S3Client()
+s3_client = S3Client()  # module level singleton instance

@@ -19,6 +19,4 @@ class MockClient():
             del self.data[key]
 
 
-def create_mock_client() -> MockClient:
-    """Factory function to create a singleton Mock client instance."""
-    return MockClient()
+mock_client = MockClient()

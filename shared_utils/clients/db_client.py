@@ -43,6 +43,4 @@ class DBClient(DBClientBase):
         return Session(self.engine)
 
 
-def create_db_client() -> DBClient:
-    """Factory function to create a singleton DB client instance."""
-    return DBClient()
+db_client = DBClient()  # module level singleton instance
