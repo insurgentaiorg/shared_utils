@@ -46,6 +46,21 @@ def get_chunk(session: Session, chunk_id: UUID) -> Optional[Chunk]:
     result = session.exec(statement).first()
     return result
 
+def get_all_chunks_from_doc(session: Session, document_id: UUID) -> list[Chunk]:
+    """
+    Retrieves all chunks that belong to a specific document.
+    
+    Args:
+        session (Session): The session to use for the query.
+        document_id (UUID): The ID of the document to get chunks for.
+
+    Returns:
+        list[Chunk]: A list of all chunks belonging to the specified document.
+    """
+    statement = select(Chunk).where(Chunk.document_id == document_id)
+    result = session.exec(statement).all()
+    return result
+
 def update_chunk_graph_id(session: Session, chunk_id: UUID, graph_id: UUID) -> None:
     """
     Updates the graph ID of a chunk.
