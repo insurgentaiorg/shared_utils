@@ -14,7 +14,6 @@ class AGEClient(DBClientBase):
     - AGE_HOST: The host of the AGE database (default: localhost).
     - AGE_PORT: The port of the AGE database (default: 5432).
     - AGE_DB: The name of the AGE database.
-    - AGE_GRAPH: The name of the AGE graph (default: knowledge_graph).
     """
     def __init__(self):
         user = os.getenv("AGE_USER")
@@ -22,7 +21,6 @@ class AGEClient(DBClientBase):
         host = os.getenv("AGE_HOST", "localhost")
         port = os.getenv("AGE_PORT", "5432")
         dbname = os.getenv("AGE_DB")
-        self.graph_name = os.getenv("AGE_GRAPH", "knowledge_graph")
 
         if not all([user, password, dbname]):
             raise EnvironmentError("Missing required AGE environment variables")
@@ -64,15 +62,6 @@ class AGEClient(DBClientBase):
         except Exception:
             # AGE might not be properly installed
             pass
-
-    def get_graph_name(self) -> str:
-        """Get the configured graph name."""
-        return self.graph_name
-
-    def execute_with_graph(self, func, *args, **kwargs):
-        """Execute a function with a scoped connection and graph name."""
-        with self.scoped_session() as conn:
-            return func(conn, self.graph_name, *args, **kwargs)
 
     def load_age_extension(self) -> bool:
         """Load the AGE extension (legacy method - now handled automatically)."""
