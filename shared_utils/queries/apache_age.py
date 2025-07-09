@@ -16,6 +16,18 @@ def execute_cypher_single(conn: Connection, graph_name: str, query: str, params:
     results = execute_cypher(conn, graph_name, query, params)
     return results[0] if results else None
 
+def graph_exists(conn: Connection, graph_name: str) -> bool:
+    """Check if the AGE graph with the given name exists."""
+    try:
+        query = f"SELECT * FROM ag_graph WHERE name = '{graph_name}';"
+        with conn.cursor() as cur:
+            cur.execute(query)
+            result = cur.fetchone()
+            return result is not None
+    except Exception:
+        # If there's an error (e.g., ag_graph table doesn't exist), assume graph doesn't exist
+        return False
+
 def create_graph(conn: Connection, graph_name: str) -> bool:
     """Create the AGE graph if it doesn't exist."""
     try:
