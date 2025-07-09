@@ -13,16 +13,8 @@ class DBClient(DBClientBase):
     - POSTGRES_DB: The name of the database.
     """
     def __init__(self):
-        user = os.getenv("POSTGRES_USER")
-        password = os.getenv("POSTGRES_PASSWORD")
-        host = os.getenv("POSTGRES_HOST", "localhost")
-        port = os.getenv("POSTGRES_PORT", "5432")
-        dbname = os.getenv("POSTGRES_DB")
-
-        if not all([user, password, dbname]):
-            raise EnvironmentError("Missing required Postgres environment variables")
-
-        self.database_url = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
+        super().__init__()
+        self.database_url = f"postgresql+psycopg://{self.user}:{self.password}@{self.host}:{self.port}/{self.dbname}"
         self.engine = create_engine(self.database_url, echo=False)
 
     @contextmanager

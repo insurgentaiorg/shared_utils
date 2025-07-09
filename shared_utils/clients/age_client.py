@@ -9,29 +9,12 @@ from .utils.db_client_base import DBClientBase
 class AGEClient(DBClientBase):
     """AGE client for connecting to a PostgreSQL database with Apache AGE extension.
     Requires environment variables:
-    - AGE_USER: The username for the AGE database.
-    - AGE_PASSWORD: The password for the AGE database.
-    - AGE_HOST: The host of the AGE database (default: localhost).
-    - AGE_PORT: The port of the AGE database (default: 5432).
-    - AGE_DB: The name of the AGE database.
+    - POSTGRES_USER: The username for the database.
+    - POSTGRES_PASSWORD: The password for the database.
+    - POSTGRES_HOST: The host of the database (default: localhost).
+    - POSTGRES_PORT: The port of the database (default: 5432).
+    - POSTGRES_DB: The name of the database.
     """
-    def __init__(self):
-        user = os.getenv("AGE_USER")
-        password = os.getenv("AGE_PASSWORD")
-        host = os.getenv("AGE_HOST", "localhost")
-        port = os.getenv("AGE_PORT", "5432")
-        dbname = os.getenv("AGE_DB")
-
-        if not all([user, password, dbname]):
-            raise EnvironmentError("Missing required AGE environment variables")
-
-        self.connection_params = {
-            "host": host,
-            "port": port,
-            "dbname": dbname,
-            "user": user,
-            "password": password
-        }
 
     @contextmanager
     def scoped_session(self):
