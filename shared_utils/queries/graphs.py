@@ -1,9 +1,9 @@
 from typing import Optional
 from uuid import UUID
 from sqlmodel import Session, select
-from shared_utils.sql_models import Graph
+from shared_utils.sql_models import ChunkGraph
 
-def insert_graph(session: Session, graph: Graph) -> None:
+def insert_graph(session: Session, graph: ChunkGraph) -> None:
     """
     Inserts a new graph into the database.
 
@@ -17,7 +17,7 @@ def insert_graph(session: Session, graph: Graph) -> None:
     session.add(graph)
     session.commit()
 
-def get_graph(session: Session, graph_id: UUID) -> Optional[Graph]:
+def get_graph(session: Session, graph_id: UUID) -> Optional[ChunkGraph]:
     """
     Retrieves a graph by its ID.
 
@@ -28,6 +28,6 @@ def get_graph(session: Session, graph_id: UUID) -> Optional[Graph]:
     Returns:
         Optional[Graph]: The graph data if found, otherwise None.
     """
-    statement = select(Graph).where(Graph.graph_id == graph_id)
+    statement = select(ChunkGraph).where(ChunkGraph.graph_id == graph_id)
     result = session.exec(statement).first()
     return result if result else None
