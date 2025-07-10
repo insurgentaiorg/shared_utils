@@ -3,6 +3,7 @@ import json
 import redis
 import threading
 from typing import Optional, Union, Any
+from pydantic import BaseModel
 
 class RedisClient:
     def __init__(self):
@@ -12,9 +13,9 @@ class RedisClient:
         self._callbacks = {}
         self._stop_flags = {}
 
-    def send(self, stream: str, value: Any):
+    def send(self, stream: str, value: BaseModel):
         # Serialize entire object as single JSON string under 'data' field
-        message = {"data": json.dumps(value)}
+        message = {"data": value.model_dump_json()}
         self._client.xadd(stream, message)
 
     def flush(self):
