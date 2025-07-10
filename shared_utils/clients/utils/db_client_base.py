@@ -21,10 +21,6 @@ class DBClientBase(ABC):
             "user": user,
             "password": password
         }
-        
-    @abstractmethod
-    def __init__(self) -> None:
-        """Initialize the database client with connection parameters."""
 
     @abstractmethod
     def scoped_session(self) -> ContextManager[Any]:
