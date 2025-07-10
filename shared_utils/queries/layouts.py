@@ -4,7 +4,7 @@ from sqlalchemy import select
 from shared_utils.sql_models import Layout
 
 
-def layout_exists(session: Session, graph_id: UUID, layout_name: str) -> bool:
+def layout_exists(session: Session, graph_name: str, layout_name: str) -> bool:
     """
     Checks if a layout with the given graph ID and layout name exists.
 
