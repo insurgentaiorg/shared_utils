@@ -6,7 +6,7 @@ def deserialize_event(contract_class):
     """
     def decorator(callback_fn):
         @wraps(callback_fn)
-        def wrapper(event_data):
+        def wrapper(msg_id, event_data):
             try:
                 obj = contract_class(**event_data)
             except Exception as e:
