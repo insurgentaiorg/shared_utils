@@ -3,13 +3,34 @@ from psycopg import Connection
 
 
 # AGE-specific operations
+# TODO: fix this -- getting 'No function matches the given name and argument types' error
+# def execute_cypher(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:
+#     """Execute a Cypher query and return results."""
+#     # Prepare the AGE query
+#     age_query = f"SELECT * FROM cypher('{graph_name}', $${query}$$) as (result agtype);"
+#     with conn.cursor() as cur:
+#         cur.execute(age_query, params or {})
+#         return cur.fetchall()
 def execute_cypher(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:
     """Execute a Cypher query and return results."""
     # Prepare the AGE query
-    age_query = f"SELECT * FROM cypher('{graph_name}', $${query}$$) as (result agtype);"
+    if params: 
+        query = query % tuple(map(lambda v: f"'{v}'" if isinstance(v, str) else v, params))
+    
+    cypher_sql = sql.SQL(
+        "SELECT * FROM cypher({}, $$ {} $$) as (result agtype);"
+    ).format(
+        sql.Literal(graph_name),
+        sql.SQL(query)
+    )
+
+    # age_query = f"SELECT * FROM cypher('{graph_name}', $${query}$$) as (result agtype);"
+
+
     with conn.cursor() as cur:
-        cur.execute(age_query, params or {})
+        cur.execute(cypher_sql, params or {})
         return cur.fetchall()
+
 
 def execute_cypher_single(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict]:
     """Execute a Cypher query and return single result."""

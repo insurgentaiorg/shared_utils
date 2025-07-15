@@ -43,8 +43,7 @@ class AGEClient(DBClientBase):
                 cur.execute("LOAD 'age';")
                 cur.execute("SET search_path = ag_catalog, '$user', public;")
         except Exception:
-            # AGE might not be properly installed
-            pass
+            raise RuntimeError("Failed to load AGE extension. Ensure it is installed in the PostgreSQL database.")
 
     def load_age_extension(self) -> bool:
         """Load the AGE extension (legacy method - now handled automatically)."""
