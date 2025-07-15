@@ -2,4 +2,5 @@
 rm -rf dist/*
 rm -rf build/*
 
-python3 -m build . --wheel
+python3.12 -m build --wheel
+
