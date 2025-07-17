@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from sqlmodel import Session, select
 from shared_utils.sql_models import ChunkGraph
