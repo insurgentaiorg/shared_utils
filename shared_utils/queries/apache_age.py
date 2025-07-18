@@ -1,33 +1,93 @@
 from typing import Optional, Dict, Any, List
 from psycopg import Connection
+from psycopg.cursor import Cursor
+from psycopg.sql import SQL, Literal
+from re import compile
+
+WHITESPACE = compile('\s')
+
+# From apache age official repository
+def execute_cypher(conn:Connection, graphName:str, cypherStmt:str, cols:list=None, params:tuple=None) -> Cursor :
+    if conn == None or conn.closed:
+        raise Exception("Connection is closed or None")
+
+    cursor = conn.cursor()
+    #clean up the string for mogrification
+    cypherStmt = cypherStmt.replace("\n", "")
+    cypherStmt = cypherStmt.replace("\t", "")
+    cypher = str(cursor.mogrify(cypherStmt, params))
+    cypher = cypher.strip()
+
+    preparedStmt = "SELECT * FROM age_prepare_cypher({graphName},{cypherStmt})"
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute(SQL(preparedStmt).format(graphName=Literal(graphName),cypherStmt=Literal(cypher)))
+    except SyntaxError as cause:
+        conn.rollback()
+        raise cause
+    except Exception as cause:
+        conn.rollback()
+        raise Exception(f"Execution error: {cause}\nQuery: {preparedStmt}") from cause
+
+    stmt = _build_cypher(graphName, cypher, cols)
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute(stmt)
+        return cursor
+    except SyntaxError as cause:
+        conn.rollback()
+        raise cause
+    except Exception as cause:
+        conn.rollback()
+        raise Exception(f"Execution error: {cause}\nQuery: {stmt}") from cause
+
+# From apache age official repository
+def _build_cypher(graphName: str, cypherStmt: str, columns: list) -> str:
+    if graphName == None:
+        raise Exception("Graph name cannot be None")
+
+    columnExp = []
+    if columns != None and len(columns) > 0:
+        for col in columns:
+            if col.strip() == '':
+                continue
+            elif WHITESPACE.search(col) != None:
+                columnExp.append(col)
+            else:
+                columnExp.append(col + " agtype")
+    else:
+        columnExp.append('v agtype')
+
+    stmtArr = []
+    stmtArr.append("SELECT * from cypher(NULL,NULL) as (")
+    stmtArr.append(','.join(columnExp))
+    stmtArr.append(");")
+    return "".join(stmtArr)
 
 
 # AGE-specific operations
-def execute_cypher(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:
-    """Execute a Cypher query and return results."""
-    # Prepare the AGE query
-    if params: 
-        query = query % tuple(map(lambda v: f"'{v}'" if isinstance(v, str) else v, params))
+# def execute_cypher(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:
+#     """Execute a Cypher query and return results."""
+#     # Prepare the AGE query
+#     if params: 
+#         query = query % tuple(map(lambda v: f"'{v}'" if isinstance(v, str) else v, params))
     
-    cypher_sql = sql.SQL(
-        "SELECT * FROM cypher({}, $$ {} $$) as (result agtype);"
-    ).format(
-        sql.Literal(graph_name),
-        sql.SQL(query)
-    )
+#     cypher_sql = sql.SQL(
+#         "SELECT * FROM cypher({}, $$ {} $$) as (result agtype);"
+#     ).format(
+#         sql.Literal(graph_name),
+#         sql.SQL(query)
+#     )
 
-    # age_query = f"SELECT * FROM cypher('{graph_name}', $${query}$$) as (result agtype);"
-
-
-    with conn.cursor() as cur:
-        cur.execute(cypher_sql, params or {})
-        return cur.fetchall()
+#     # age_query = f"SELECT * FROM cypher('{graph_name}', $${query}$$) as (result agtype);"
 
 
-def execute_cypher_single(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict]:
-    """Execute a Cypher query and return single result."""
-    results = execute_cypher(conn, graph_name, query, params)
-    return results[0] if results else None
+#     with conn.cursor() as cur:
+#         cur.execute(cypher_sql, params or {})
+#         return cur.fetchall()
+
 
 def graph_exists(conn: Connection, graph_name: str) -> bool:
     """Check if the AGE graph with the given name exists."""
@@ -41,6 +101,7 @@ def graph_exists(conn: Connection, graph_name: str) -> bool:
         # If there's an error (e.g., ag_graph table doesn't exist), assume graph doesn't exist
         return False
 
+
 def create_graph(conn: Connection, graph_name: str) -> bool:
     """Create the AGE graph if it doesn't exist."""
     try:
@@ -52,6 +113,7 @@ def create_graph(conn: Connection, graph_name: str) -> bool:
         # Graph might already exist
         return False
 
+
 def drop_graph(conn: Connection, graph_name: str) -> bool:
     """Drop the AGE graph."""
     try:
@@ -61,42 +123,3 @@ def drop_graph(conn: Connection, graph_name: str) -> bool:
         return True
     except Exception:
         return False
-
-
-# Utility methods
-
-def create_node(conn: Connection, graph_name: str, label: str, properties: Dict[str, Any]) -> Optional[Dict]:
-    """Create a node with given label and properties."""
-    props_str = ", ".join([f"{k}: '{v}'" for k, v in properties.items()])
-    query = f"CREATE (n:{label} {{{props_str}}}) RETURN n"
-    return execute_cypher_single(conn, graph_name, query)
-
-def create_edge(conn: Connection, graph_name: str, from_node_id: str, to_node_id: str, edge_type: str, 
-                properties: Optional[Dict[str, Any]] = None) -> Optional[Dict]:
-    """Create an edge between two nodes."""
-    props_str = ""
-    if properties:
-        props_str = "{" + ", ".join([f"{k}: '{v}'" for k, v in properties.items()]) + "}"
-    
-    query = f"""
-    MATCH (a), (b) 
-    WHERE id(a) = {from_node_id} AND id(b) = {to_node_id}
-    CREATE (a)-[r:{edge_type} {props_str}]->(b) 
-    RETURN r
-    """
-    return execute_cypher_single(conn, graph_name, query)
-
-def find_nodes(conn: Connection, graph_name: str, label: Optional[str] = None, 
-                properties: Optional[Dict[str, Any]] = None) -> List[Dict]:
-    """Find nodes by label and/or properties."""
-    query = "MATCH (n"
-    if label:
-        query += f":{label}"
-    query += ")"
-    
-    if properties:
-        where_clauses = [f"n.{k} = '{v}'" for k, v in properties.items()]
-        query += " WHERE " + " AND ".join(where_clauses)
-    
-    query += " RETURN n"
-    return execute_cypher(conn, graph_name, query)
