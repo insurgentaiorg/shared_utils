@@ -5,14 +5,22 @@ from typing import Any, ContextManager
 class DBClientBase(ABC):
     """Abstract base class for database clients."""
     def __init__(self):
-        self.user = getenv("POSTGRES_USER")
-        self.password = getenv("POSTGRES_PASSWORD")
+        self.user = getenv("POSTGRES_USER", "postgres")
+        self.password = getenv("POSTGRES_PASSWORD", "password")
         self.host = getenv("POSTGRES_HOST", "localhost")
         self.port = getenv("POSTGRES_PORT", "5432")
-        self.dbname = getenv("POSTGRES_DB")
+        self.dbname = getenv("POSTGRES_DB", "kg_db")
 
-        if not all([self.user, self.password, self.dbname]):
-            raise EnvironmentError("Missing required PostgreSQL environment variables")
+        if not self.user:
+            raise EnvironmentError("POSTGRES_USER environment variable is not set")
+        if not self.password:
+            raise EnvironmentError("POSTGRES_PASSWORD environment variable is not set")
+        if not self.host:
+            raise EnvironmentError("POSTGRES_HOST environment variable is not set")
+        if not self.port:
+            raise EnvironmentError("POSTGRES_PORT environment variable is not set")
+        if not self.dbname:
+            raise EnvironmentError("POSTGRES_DB environment variable is not set")
 
         # psycopg connection parameters
         self.connection_params = {
