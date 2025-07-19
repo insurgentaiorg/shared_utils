@@ -5,6 +5,7 @@ import json
 import redis
 import threading
 import inspect
+import time
 from typing import List, Optional, Union, Any, Dict, Set, Callable
 from pydantic import BaseModel
 
@@ -17,17 +18,13 @@ class RedisClient:
         self._consumers = {}
         self._callbacks = {}
         self._stop_flags = {}
-        self._max_block_reads = {}
+        self._max_concurrent_tasks = {}
         self._running_tasks: Dict[str, int] = {}
 
     def send(self, stream: str, value: BaseModel):
         # Serialize entire object as single JSON string under 'data' field
         message = {"data": value.model_dump_json()}
         self._client.xadd(stream, message)
-
-    def flush(self):
-        # No flush needed for Redis Streams
-        pass
 
     # Key-Value Operations
     def get(self, key: str) -> Optional[str]:
@@ -84,8 +81,8 @@ class RedisClient:
         """Get the time-to-live of a key in seconds."""
         return self._client.ttl(key)
 
-    def create_consumer(self, stream: str, group_id: str, max_block_read: int = 10):
-        """Create a consumer thread for a specific stream with a maximum block read size."""
+    def create_consumer(self, stream: str, group_id: str, max_concurrent_tasks: int = 10):
+        """Create a consumer thread for a specific stream with a maximum number of concurrent tasks."""
         if stream in self._consumers:
             raise RuntimeError(f"Consumer for stream '{stream}' already exists.")
 
@@ -98,7 +95,7 @@ class RedisClient:
         # Initialize stream settings
         self._callbacks[stream] = []
         self._stop_flags[stream] = False
-        self._max_block_reads[stream] = max_block_read
+        self._max_concurrent_tasks[stream] = max_concurrent_tasks
         self._running_tasks[stream] = 0
 
         # Dedicated thread for this stream's consumer
@@ -112,9 +109,14 @@ class RedisClient:
 
                 # Calculate how many messages to read from stream based on currently running tasks
                 running_task_count = self._running_tasks[stream]
-
             
-                read_count = max(1, self._max_block_reads[stream] - running_task_count)
+                # Skip reading messages if we're at or over the max concurrent tasks limit
+                if running_task_count >= self._max_concurrent_tasks[stream]:
+                    # Sleep briefly to avoid CPU spinning when at capacity
+                    time.sleep(0.1)
+                    continue
+                    
+                read_count = self._max_concurrent_tasks[stream] - running_task_count
                 
                 resp = self._client.xreadgroup(
                     groupname=group_id,
@@ -224,19 +226,19 @@ class RedisClient:
             # Always acknowledge the message after all callbacks are executed
             self._client.xack(stream, group_id, msg_id)
 
-    # def stop_consumer(self, stream: str):
-    #     """Stop a consumer thread and clean up resources."""
-    #     if stream in self._stop_flags:
-    #         self._stop_flags[stream] = True
-    #         self._consumers[stream].join()
-    #         del self._consumers[stream]
-    #         del self._callbacks[stream]
-    #         del self._stop_flags[stream]
+    def stop_consumer(self, stream: str):
+        """Stop a consumer thread and clean up resources."""
+        if stream in self._stop_flags:
+            self._stop_flags[stream] = True
+            self._consumers[stream].join()
+            del self._consumers[stream]
+            del self._callbacks[stream]
+            del self._stop_flags[stream]
             
-    #         if stream in self._max_block_reads:
-    #             del self._max_block_reads[stream]
-    #         if stream in self._running_tasks:
-    #             del self._running_tasks[stream]
+            if stream in self._max_concurrent_tasks:
+                del self._max_concurrent_tasks[stream]
+            if stream in self._running_tasks:
+                del self._running_tasks[stream]
 
 
 redis_client = RedisClient()  # module level singleton instance
