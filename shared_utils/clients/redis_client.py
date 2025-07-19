@@ -1,8 +1,11 @@
+import asyncio
+import logging
 import os
 import json
 import redis
 import threading
-from typing import Optional, Union, Any
+import inspect
+from typing import List, Optional, Union, Any, Dict, Set, Callable
 from pydantic import BaseModel
 
 class RedisClient:
@@ -14,6 +17,8 @@ class RedisClient:
         self._consumers = {}
         self._callbacks = {}
         self._stop_flags = {}
+        self._max_block_reads = {}
+        self._running_tasks: Dict[str, int] = {}
 
     def send(self, stream: str, value: BaseModel):
         # Serialize entire object as single JSON string under 'data' field
@@ -79,10 +84,10 @@ class RedisClient:
         """Get the time-to-live of a key in seconds."""
         return self._client.ttl(key)
 
-    def register_callback(self, stream: str, group_id: str, callback):
+    def create_consumer(self, stream: str, group_id: str, max_block_read: int = 10):
+        """Create a consumer thread for a specific stream with a maximum block read size."""
         if stream in self._consumers:
-            self._callbacks[stream].append(callback)
-            return
+            raise RuntimeError(f"Consumer for stream '{stream}' already exists.")
 
         try:
             self._client.xgroup_create(stream, group_id, id='0', mkstream=True)
@@ -90,45 +95,148 @@ class RedisClient:
             if "BUSYGROUP" not in str(e):
                 raise
 
-        self._callbacks[stream] = [callback]
+        # Initialize stream settings
+        self._callbacks[stream] = []
         self._stop_flags[stream] = False
+        self._max_block_reads[stream] = max_block_read
+        self._running_tasks[stream] = 0
 
+        # Dedicated thread for this stream's consumer
         def consume_loop():
+            # Create a thread-local event loop for this consumer thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
             consumer_name = f"{group_id}-consumer"
             while not self._stop_flags[stream]:
+
+                # Calculate how many messages to read from stream based on currently running tasks
+                running_task_count = self._running_tasks[stream]
+
+            
+                read_count = max(1, self._max_block_reads[stream] - running_task_count)
+                
                 resp = self._client.xreadgroup(
                     groupname=group_id,
                     consumername=consumer_name,
                     streams={stream: '>'},
-                    count=10,
+                    count=read_count,
                     block=1000
                 )
                 if not resp:
                     continue
-                for _, messages in resp:
-                    for msg_id, fields in messages:
-                        data_json = fields.get(b'data') or fields.get('data')
-                        if data_json:
-                            try:
-                                val = json.loads(data_json)
-                            except Exception:
-                                val = None
-                        else:
-                            val = None
-                        for cb in self._callbacks[stream]:
-                            cb(msg_id, val)
-                        self._client.xack(stream, group_id, msg_id)
+
+                # Process messages using the thread-local event loop
+                try:
+                    loop.run_until_complete(self.handle_messages_async(resp, stream, group_id, loop))
+                except Exception as e:
+                    print(f"Error processing messages: {e}")
+
+            # Clean up the event loop
+            loop.close()
 
         t = threading.Thread(target=consume_loop, daemon=True)
         t.start()
         self._consumers[stream] = t
 
-    def stop_consumer(self, stream: str):
-        if stream in self._stop_flags:
-            self._stop_flags[stream] = True
-            self._consumers[stream].join()
-            del self._consumers[stream]
-            del self._callbacks[stream]
-            del self._stop_flags[stream]
+    def register_callback(self, stream: str, group_id: str, callback):
+        """Register a callback for a stream. Creates a consumer if one doesn't exist."""
+        # Create a consumer if one doesn't exist
+        if stream not in self._consumers:
+            self.create_consumer(stream, group_id)
+        
+        # Add the callback to the stream's callback list
+        if stream in self._callbacks:
+            self._callbacks[stream].append(callback)
+        else:
+            self._callbacks[stream] = [callback]
+
+    def handle_messages_sync(self, redis_response, stream:str, group_id:str):
+        """process messages serially, executing callbacks serially as well"""
+        for _, messages in redis_response:
+            for msg_id, fields in messages:
+                data_json = fields.get(b'data') or fields.get('data')
+                if data_json:
+                    try:
+                        val = json.loads(data_json)
+                    except Exception:
+                        val = None
+                else:
+                    val = None
+                for cb in self._callbacks[stream]:
+                    cb(msg_id, val)
+                self._client.xack(stream, group_id, msg_id)
+
+    async def handle_messages_async(self, redis_response, stream: str, group_id: str, loop: asyncio.AbstractEventLoop):
+        """Process messages asynchronously with proper task tracking."""
+        tasks = []
+        for _, messages in redis_response:
+            for msg_id, fields in messages:
+                data_json = fields.get(b'data') or fields.get('data')
+                if data_json:
+                    try:
+                        val = json.loads(data_json)
+                    except Exception:
+                        val = None
+                else:
+                    val = None
+
+                # Create a task for this message
+                task = loop.create_task(
+                    self._process_message(stream, group_id, msg_id, val)
+                )
+                
+                # Track the task
+                self._running_tasks[stream] += 1
+                
+                # Add done callback to remove task from tracking
+                task.add_done_callback(
+                    lambda t, s=stream: self._decrement_task_count(s)
+                )
+                
+                tasks.append(task)
+        
+        # Wait for all tasks to complete if there are any
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+    
+    def _decrement_task_count(self, stream: str):
+        """Decrement the task count for a stream."""
+        if stream in self._running_tasks and self._running_tasks[stream] > 0:
+            self._running_tasks[stream] -= 1
+
+    async def _process_message(self, stream: str, group_id: str, msg_id: str, val: Any):
+        """Process a single message by executing all callbacks and then acknowledging."""
+        try:
+            # Execute all callbacks for this message
+            for cb in self._callbacks[stream]:
+                try:
+                    # Check if callback is a coroutine function
+                    if inspect.iscoroutinefunction(cb):
+                        await cb(msg_id, val)
+                    else:
+                        # Run non-async callback in a thread pool
+                        logging.warning(f"Running non-async callback {cb} in thread pool")
+                        await asyncio.to_thread(cb, msg_id, val)
+                except Exception as e:
+                    logging.error(f"Error in callback for stream {stream}: {e}")
+        finally:
+            # Always acknowledge the message after all callbacks are executed
+            self._client.xack(stream, group_id, msg_id)
+
+    # def stop_consumer(self, stream: str):
+    #     """Stop a consumer thread and clean up resources."""
+    #     if stream in self._stop_flags:
+    #         self._stop_flags[stream] = True
+    #         self._consumers[stream].join()
+    #         del self._consumers[stream]
+    #         del self._callbacks[stream]
+    #         del self._stop_flags[stream]
+            
+    #         if stream in self._max_block_reads:
+    #             del self._max_block_reads[stream]
+    #         if stream in self._running_tasks:
+    #             del self._running_tasks[stream]
+
 
 redis_client = RedisClient()  # module level singleton instance
