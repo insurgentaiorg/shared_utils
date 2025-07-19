@@ -6,8 +6,13 @@ import redis
 import threading
 import inspect
 import time
-from typing import List, Optional, Union, Any, Dict, Set, Callable
+from typing import List, Optional, Union, Any, Dict, Set, Callable, Awaitable
 from pydantic import BaseModel
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(threadName)s] %(levelname)s: %(message)s'
+)
 
 class RedisClient:
     def __init__(self):
@@ -137,11 +142,11 @@ class RedisClient:
             # Clean up the event loop
             loop.close()
 
-        t = threading.Thread(target=consume_loop, daemon=True)
+        t = threading.Thread(target=consume_loop, daemon=True, name=f"RedisConsumer-{stream}")
         t.start()
         self._consumers[stream] = t
 
-    def register_callback(self, stream: str, group_id: str, callback):
+    def register_callback(self, stream: str, group_id: str, callback: Union[Callable[[str, Any], None], Callable[[str, Any], Awaitable[None]]]):
         """Register a callback for a stream. Creates a consumer if one doesn't exist."""
         # Create a consumer if one doesn't exist
         if stream not in self._consumers:
@@ -153,21 +158,21 @@ class RedisClient:
         else:
             self._callbacks[stream] = [callback]
 
-    def handle_messages_sync(self, redis_response, stream:str, group_id:str):
-        """process messages serially, executing callbacks serially as well"""
-        for _, messages in redis_response:
-            for msg_id, fields in messages:
-                data_json = fields.get(b'data') or fields.get('data')
-                if data_json:
-                    try:
-                        val = json.loads(data_json)
-                    except Exception:
-                        val = None
-                else:
-                    val = None
-                for cb in self._callbacks[stream]:
-                    cb(msg_id, val)
-                self._client.xack(stream, group_id, msg_id)
+    # def handle_messages_sync(self, redis_response, stream:str, group_id:str):
+    #     """process messages serially, executing callbacks serially as well"""
+    #     for _, messages in redis_response:
+    #         for msg_id, fields in messages:
+    #             data_json = fields.get(b'data') or fields.get('data')
+    #             if data_json:
+    #                 try:
+    #                     val = json.loads(data_json)
+    #                 except Exception:
+    #                     val = None
+    #             else:
+    #                 val = None
+    #             for cb in self._callbacks[stream]:
+    #                 cb(msg_id, val)
+    #             self._client.xack(stream, group_id, msg_id)
 
     async def handle_messages_async(self, redis_response, stream: str, group_id: str, loop: asyncio.AbstractEventLoop):
         """Process messages asynchronously with proper task tracking."""
