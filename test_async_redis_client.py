@@ -1,6 +1,7 @@
 import asyncio
 import time
 import threading
+import logging
 from pydantic import BaseModel
 import pytest
 import uuid
@@ -156,6 +157,22 @@ async def test_mixed_callbacks():
 
     # Cleanup
     redis_client.stop_consumer(stream_name)
+
+def test_single_async_callback():
+    stream_name = f"test-stream-{uuid.uuid4()}"
+    group_id = "test-group"
+    event = TestMessage(id="1", value="test-1")
+
+    redis_client.create_consumer(stream_name, group_id, max_concurrent_tasks=1)
+
+    async def async_callback(msg_id, data):
+        assert data['value'] == "test-1", "Async callback received unexpected data"
+        logging.info(f"Async callback processed message {msg_id} with data {data}")
+        event.set()
+
+    redis_client.register_callback(stream_name, group_id, async_callback)
+    time.sleep(0.1)  # Ensure consumer is ready
+    redis_client.send(stream_name, event)
 
 # Test 4: Error handling in callbacks
 # This test verifies that errors in callbacks don't break processing
