@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared_utils.sql_models.Chunk import Chunk
 
-async def insert_chunk(session: AsyncSession, chunk: Chunk) -> None:
+async def async_insert_chunk(session: AsyncSession, chunk: Chunk) -> None:
     """
     Asynchronously inserts a new chunk into the database.
     
@@ -18,7 +18,7 @@ async def insert_chunk(session: AsyncSession, chunk: Chunk) -> None:
     session.add(chunk)
     await session.commit()
 
-async def insert_chunks(session: AsyncSession, chunks: List[Chunk]) -> None:
+async def async_insert_chunks(session: AsyncSession, chunks: List[Chunk]) -> None:
     """
     Asynchronously inserts multiple chunks into the database.
     
@@ -32,7 +32,7 @@ async def insert_chunks(session: AsyncSession, chunks: List[Chunk]) -> None:
     session.add_all(chunks)
     await session.commit()
 
-async def get_chunk(session: AsyncSession, chunk_id: UUID) -> Optional[Chunk]:
+async def async_get_chunk(session: AsyncSession, chunk_id: UUID) -> Optional[Chunk]:
     """
     Asynchronously retrieves a chunk by its ID.
     
@@ -47,7 +47,7 @@ async def get_chunk(session: AsyncSession, chunk_id: UUID) -> Optional[Chunk]:
     result = await session.execute(statement)
     return result.scalar_one_or_none()
 
-async def get_all_chunks_from_doc(session: AsyncSession, document_id: UUID) -> List[Chunk]:
+async def async_get_all_chunks_from_doc(session: AsyncSession, document_id: UUID) -> List[Chunk]:
     """
     Asynchronously retrieves all chunks that belong to a specific document.
     
@@ -62,7 +62,7 @@ async def get_all_chunks_from_doc(session: AsyncSession, document_id: UUID) -> L
     result = await session.execute(statement)
     return result.scalars().all()
 
-async def update_chunk_graph_id(session: AsyncSession, chunk_id: UUID, graph_id: UUID) -> None:
+async def async_update_chunk_graph_id(session: AsyncSession, chunk_id: UUID, graph_id: UUID) -> None:
     """
     Asynchronously updates the graph ID of a chunk.
     

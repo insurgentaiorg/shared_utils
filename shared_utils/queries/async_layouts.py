@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared_utils.sql_models import Layout
 
 
-async def layout_exists(session: AsyncSession, graph_name: str, layout_name: str) -> bool:
+async def async_layout_exists(session: AsyncSession, graph_name: str, layout_name: str) -> bool:
     """
     Asynchronously checks if a layout with the given graph name and layout name exists.
 
@@ -24,7 +24,7 @@ async def layout_exists(session: AsyncSession, graph_name: str, layout_name: str
     return result.scalar_one_or_none() is not None
 
 
-async def get_layout(session: AsyncSession, graph_id: UUID, layout_name: str) -> Optional[Layout]:
+async def async_get_layout(session: AsyncSession, graph_id: UUID, layout_name: str) -> Optional[Layout]:
     """
     Asynchronously retrieves a specific layout by graph ID and layout name.
 
@@ -43,7 +43,7 @@ async def get_layout(session: AsyncSession, graph_id: UUID, layout_name: str) ->
     return result.scalar_one_or_none()
 
 
-async def get_layouts(session: AsyncSession, graph_name: str) -> List[Layout]:
+async def async_get_layouts(session: AsyncSession, graph_name: str) -> List[Layout]:
     """
     Asynchronously retrieves all layouts for a specific graph.
 
@@ -59,7 +59,7 @@ async def get_layouts(session: AsyncSession, graph_name: str) -> List[Layout]:
     return result.scalars().all() or []
 
 
-async def insert_layout(session: AsyncSession, layout: Layout) -> None:
+async def async_insert_layout(session: AsyncSession, layout: Layout) -> None:
     """
     Asynchronously inserts a new layout into the database.
 

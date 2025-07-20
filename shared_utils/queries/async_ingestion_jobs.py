@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared_utils.sql_models import IngestionJob
 
-async def insert_ingestion_job(session: AsyncSession, ingestion_job: IngestionJob) -> None:
+async def async_insert_ingestion_job(session: AsyncSession, ingestion_job: IngestionJob) -> None:
     """
     Asynchronously inserts a new ingestion job into the database.
 
@@ -18,7 +18,7 @@ async def insert_ingestion_job(session: AsyncSession, ingestion_job: IngestionJo
     session.add(ingestion_job)
     await session.commit()
 
-async def get_ingestion_job(session: AsyncSession, job_id: UUID) -> Optional[IngestionJob]:
+async def async_get_ingestion_job(session: AsyncSession, job_id: UUID) -> Optional[IngestionJob]:
     """
     Asynchronously retrieves an ingestion job by its ID.
 
@@ -33,7 +33,7 @@ async def get_ingestion_job(session: AsyncSession, job_id: UUID) -> Optional[Ing
     result = await session.execute(statement)
     return result.scalar_one_or_none()
 
-async def update_ingestion_job_status(session: AsyncSession, job_id: UUID, status: str) -> None:
+async def async_update_ingestion_job_status(session: AsyncSession, job_id: UUID, status: str) -> None:
     """
     Asynchronously updates the status of an ingestion job.
 
@@ -55,7 +55,7 @@ async def update_ingestion_job_status(session: AsyncSession, job_id: UUID, statu
     else:
         raise ValueError(f"Ingestion job with ID {job_id} not found.")
     
-async def update_ingestion_job_content(session: AsyncSession, job_id: UUID, content: Dict[str, Any]) -> None:
+async def async_update_ingestion_job_content(session: AsyncSession, job_id: UUID, content: Dict[str, Any]) -> None:
     """
     Asynchronously updates the content of an ingestion job.
 

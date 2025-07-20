@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared_utils.sql_models import DocumentMetadata
 
-async def insert_document(session: AsyncSession, document_metadata: DocumentMetadata) -> None:
+async def async_insert_document(session: AsyncSession, document_metadata: DocumentMetadata) -> None:
     """
     Asynchronously inserts a new document metadata entry into the database.
 
@@ -18,7 +18,7 @@ async def insert_document(session: AsyncSession, document_metadata: DocumentMeta
     session.add(document_metadata)
     await session.commit()
 
-async def get_document(session: AsyncSession, document_id: UUID) -> Optional[DocumentMetadata]:
+async def async_get_document(session: AsyncSession, document_id: UUID) -> Optional[DocumentMetadata]:
     """
     Asynchronously retrieves a document by its ID.
 
@@ -33,7 +33,7 @@ async def get_document(session: AsyncSession, document_id: UUID) -> Optional[Doc
     result = await session.execute(statement)
     return result.scalar_one_or_none()
 
-async def get_all_documents(session: AsyncSession) -> List[DocumentMetadata]:
+async def async_get_all_documents(session: AsyncSession) -> List[DocumentMetadata]:
     """
     Asynchronously retrieves all document metadata entries from the database.
 
@@ -47,7 +47,7 @@ async def get_all_documents(session: AsyncSession) -> List[DocumentMetadata]:
     result = await session.execute(statement)
     return result.scalars().all()
 
-async def update_document_status(session: AsyncSession, document_id: UUID, status: str) -> None:
+async def async_update_document_status(session: AsyncSession, document_id: UUID, status: str) -> None:
     """
     Asynchronously updates the status of a document.
 

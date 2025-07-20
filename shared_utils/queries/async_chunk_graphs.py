@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared_utils.sql_models import ChunkGraph
 
-async def insert_chunk_graph(session: AsyncSession, graph: ChunkGraph) -> None:
+async def async_insert_chunk_graph(session: AsyncSession, graph: ChunkGraph) -> None:
     """
     Asynchronously inserts a new graph into the database.
 
@@ -18,7 +18,7 @@ async def insert_chunk_graph(session: AsyncSession, graph: ChunkGraph) -> None:
     session.add(graph)
     await session.commit()
 
-async def get_chunk_graph(session: AsyncSession, graph_id: UUID) -> Optional[ChunkGraph]:
+async def async_get_chunk_graph(session: AsyncSession, graph_id: UUID) -> Optional[ChunkGraph]:
     """
     Asynchronously retrieves a graph by its ID.
 
@@ -33,7 +33,7 @@ async def get_chunk_graph(session: AsyncSession, graph_id: UUID) -> Optional[Chu
     result = await session.execute(statement)
     return result.scalar_one_or_none()
 
-async def get_chunk_graph_for_chunk(session: AsyncSession, chunk_id: UUID) -> Optional[ChunkGraph]:
+async def async_get_chunk_graph_for_chunk(session: AsyncSession, chunk_id: UUID) -> Optional[ChunkGraph]:
     """
     Asynchronously retrieves the graph associated with a specific chunk.
 
@@ -48,7 +48,7 @@ async def get_chunk_graph_for_chunk(session: AsyncSession, chunk_id: UUID) -> Op
     result = await session.execute(statement)
     return result.scalar_one_or_none()
 
-async def get_chunk_graphs_for_chunks(session: AsyncSession, chunk_ids: List[UUID]) -> List[ChunkGraph]:
+async def async_get_chunk_graphs_for_chunks(session: AsyncSession, chunk_ids: List[UUID]) -> List[ChunkGraph]:
     """
     Asynchronously retrieves the graphs associated with specific chunks.
 
