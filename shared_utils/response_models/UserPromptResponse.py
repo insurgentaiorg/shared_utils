@@ -1,5 +1,5 @@
 from uuid import UUID
-from ..sql_models.Graph import ChunkGraph
+from ..sql_models.ChunkGraph import ChunkGraph
 from typing import List
 from pydantic import BaseModel, Field
 
