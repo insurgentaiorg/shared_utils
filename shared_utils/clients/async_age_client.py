@@ -26,7 +26,7 @@ class AsyncAGEClient(DBClientBase):
         finally:
             await conn.close()
 
-    async def get_connection(self) -> AsyncConnection:
+    async def connect(self) -> AsyncConnection:
         """Caller is responsible for commit/rollback/close."""
         conn: AsyncConnection = await AsyncConnection.connect(**self.connection_params)
         self._setup_age_session(conn)

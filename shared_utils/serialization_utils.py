@@ -1,3 +1,4 @@
+from uuid import UUID
 from functools import wraps
 import inspect
 
@@ -32,3 +33,11 @@ def deserialize_event(contract_class):
 
 def to_db_repr(string):
     return string.replace("'", '"').replace("\\", "/")
+
+def to_age_graph_id(u: UUID) -> str:
+    """
+    Converts a UUID to an Apache AGE-compatible graph name string.
+    Ensures the name:
+    - Contains only valid identifier characters (letters, digits, underscores)
+    """
+    return f"{str(u).replace('-', '_')}"

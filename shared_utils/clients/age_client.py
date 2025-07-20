@@ -14,7 +14,7 @@ class AGEClient(DBClientBase):
     """
 
     @contextmanager
-    def scoped_session(self):
+    def scoped_connection(self):
         """Scoped connection with auto commit/rollback/close."""
         conn: Connection = psycopg.connect(**self.connection_params)
         try:
@@ -27,7 +27,7 @@ class AGEClient(DBClientBase):
         finally:
             conn.close()
 
-    def persistent_session(self) -> Connection:
+    def connect(self) -> Connection:
         """Caller is responsible for commit/rollback/close."""
         conn = psycopg.connect(**self.connection_params)
         self._setup_age_session(conn)
