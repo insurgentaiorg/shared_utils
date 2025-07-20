@@ -17,7 +17,9 @@ dependencies = [
     "pydantic>=2.11.7",
     "sqlmodel>=0.0.24",
     "redis",
-    "boto3==1.39.1"
+    "boto3==1.39.1",
+    "asyncpg>=0.29.0",  # Async PostgreSQL driver
+    "sqlalchemy[asyncio]>=2.0.0"  # SQLAlchemy with async support
 ]
 
 # Needed to build with hatchling
