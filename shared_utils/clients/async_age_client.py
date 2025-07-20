@@ -1,9 +1,8 @@
-from contextlib import contextmanager
-import psycopg
-from psycopg import Connection
+from contextlib import asynccontextmanager
+from psycopg import AsyncConnection
 from .utils.db_client_base import DBClientBase
 
-class AGEClient(DBClientBase):
+class AsyncAGEClient(DBClientBase):
     """AGE client for connecting to a PostgreSQL database with Apache AGE extension.
     Requires environment variables:
     - POSTGRES_USER: The username for the database.
@@ -13,34 +12,34 @@ class AGEClient(DBClientBase):
     - POSTGRES_DB: The name of the database.
     """
 
-    @contextmanager
-    def scoped_session(self):
+    @asynccontextmanager
+    async def scoped_connection(self):
         """Scoped connection with auto commit/rollback/close."""
-        conn: Connection = psycopg.connect(**self.connection_params)
+        conn: AsyncConnection = await AsyncConnection.connect(**self.connection_params)
         try:
-            self._setup_age_session(conn)
+            await self._setup_age_session(conn)
             yield conn
-            conn.commit()
+            await conn.commit()
         except Exception:
-            conn.rollback()
+            await conn.rollback()
             raise
         finally:
-            conn.close()
+            await conn.close()
 
-    def persistent_session(self) -> Connection:
+    async def get_connection(self) -> AsyncConnection:
         """Caller is responsible for commit/rollback/close."""
-        conn = psycopg.connect(**self.connection_params)
+        conn: AsyncConnection = await AsyncConnection.connect(**self.connection_params)
         self._setup_age_session(conn)
         return conn
 
-    def _setup_age_session(self, conn: Connection) -> None:
+    async def _setup_age_session(self, conn: AsyncConnection) -> None:
         """Setup AGE environment for each session."""
         try:
-            with conn.cursor() as cur:
-                cur.execute("LOAD 'age';")
-                cur.execute("SET search_path = ag_catalog, '$user', public;")
+            async with conn.cursor() as cur:
+                await cur.execute("LOAD 'age';")
+                await cur.execute("SET search_path = ag_catalog, '$user', public;")
         except Exception:
             raise RuntimeError("Failed to load AGE extension. Ensure it is installed in the PostgreSQL database.")
 
 
-age_client = AGEClient()  # module level singleton instance
+async_age_client = AsyncAGEClient()  # module level singleton instance

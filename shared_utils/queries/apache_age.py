@@ -1,5 +1,6 @@
 from psycopg import sql, Connection, Cursor
 from re import compile
+from psycopg import AsyncConnection, AsyncCursor
 
 WHITESPACE = compile('\s')
 
@@ -69,6 +70,53 @@ def build_cypher(graphName:str, cypherStmt:str, columns:list) ->str:
     stmtArr.append(','.join(columnExp))
     stmtArr.append(");")
     return "".join(stmtArr)
+
+# - - - -async 
+async def async_exec_cypher(conn:AsyncConnection, graph_name:str, cypher_stmt:str, cols:list=None, params:tuple=None) ->AsyncCursor:
+    if conn == None or conn.closed:
+        raise Exception("Connection is not open or is closed")
+
+    cursor:AsyncCursor = conn.cursor()
+    #clean up the string for parameter injection
+    cypher_stmt = cypher_stmt.replace("\n", "")
+    cypher_stmt = cypher_stmt.replace("\t", "")
+
+    # Simple parameter injection for backend-only use
+    # (not sql injection safe)
+    if params:
+        cypher = cypher_stmt % params
+    else:
+        cypher = cypher_stmt
+    
+    cypher = cypher.strip()
+
+    # prepate the statement (validates)
+    preparedStmt = "SELECT * FROM age_prepare_cypher({graphName},{cypherStmt})"
+    cursor: AsyncCursor = conn.cursor()
+    try:
+        await cursor.execute(sql.SQL(preparedStmt).format(graphName=sql.Literal(graph_name),cypherStmt=sql.Literal(cypher)))
+    except SyntaxError as cause:
+        await conn.rollback()
+        raise cause
+    except Exception as cause:
+        await conn.rollback()
+        raise Exception("Execution ERR[" + str(cause) +"](" + preparedStmt +")") from cause
+
+    # build and execute the cypher statement
+    stmt = build_cypher(graph_name, cypher, cols)
+    cursor: AsyncCursor = conn.cursor()
+    try:
+        await cursor.execute(stmt)
+        return cursor
+    except SyntaxError as cause:
+        await conn.rollback()
+        raise cause
+    except Exception as cause:
+        await conn.rollback()
+        raise Exception("Execution ERR[" + str(cause) +"](" + stmt +")") from cause
+
+
+
 
 # AGE-specific operations
 # def execute_cypher(conn: Connection, graph_name: str, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict]:

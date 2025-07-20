@@ -30,11 +30,3 @@ class DBClientBase(ABC):
             "user": self.user,
             "password": self.password
         }
-
-    @abstractmethod
-    def scoped_session(self) -> ContextManager[Any]:
-        """Context manager for scoped database operations with auto commit/rollback/close."""
-
-    @abstractmethod
-    def get_persistent_session(self) -> Any:
-        """Get a persistent session/connection that caller must manage."""
