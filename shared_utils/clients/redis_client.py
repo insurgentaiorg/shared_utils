@@ -25,6 +25,11 @@ class RedisClient:
         self._stop_flags = {}
         self._max_concurrent_tasks = {}
         self._running_tasks: Dict[str, int] = {}
+        
+        # Thread safety locks
+        self._consumer_lock = threading.RLock()  # For consumer creation/deletion
+        self._callback_lock = threading.RLock()  # For callback registration
+        self._task_count_locks: Dict[str, threading.Lock] = {}  # Per-stream task counting
 
     def send(self, stream: str, value: BaseModel):
         # Serialize entire object as single JSON string under 'data' field
@@ -88,20 +93,22 @@ class RedisClient:
 
     def create_consumer(self, stream: str, group_id: str, max_concurrent_tasks: int = 10):
         """Create a consumer thread for a specific stream with a maximum number of concurrent tasks."""
-        if stream in self._consumers:
-            raise RuntimeError(f"Consumer for stream '{stream}' already exists.")
+        with self._consumer_lock:
+            if stream in self._consumers:
+                raise RuntimeError(f"Consumer for stream '{stream}' already exists.")
 
-        try:
-            self._client.xgroup_create(stream, group_id, id='0', mkstream=True)
-        except redis.exceptions.ResponseError as e:
-            if "BUSYGROUP" not in str(e):
-                raise
+            try:
+                self._client.xgroup_create(stream, group_id, id='0', mkstream=True)
+            except redis.exceptions.ResponseError as e:
+                if "BUSYGROUP" not in str(e):
+                    raise
 
-        # Initialize stream settings
-        self._callbacks[stream] = []
-        self._stop_flags[stream] = False
-        self._max_concurrent_tasks[stream] = max_concurrent_tasks
-        self._running_tasks[stream] = 0
+            # Initialize stream settings
+            self._callbacks[stream] = []
+            self._stop_flags[stream] = False
+            self._max_concurrent_tasks[stream] = max_concurrent_tasks
+            self._running_tasks[stream] = 0
+            self._task_count_locks[stream] = threading.Lock()  # Per-stream lock
 
         # Dedicated thread for this stream's consumer
         def consume_loop():
@@ -113,8 +120,9 @@ class RedisClient:
             while not self._stop_flags[stream]:
 
                 # Calculate how many messages to read from stream based on currently running tasks
-                running_task_count = self._running_tasks[stream]
-            
+                with self._task_count_locks[stream]:
+                    running_task_count = self._running_tasks[stream]
+                
                 # Skip reading messages if we're at or over the max concurrent tasks limit
                 if running_task_count >= self._max_concurrent_tasks[stream]:
                     # Sleep briefly to avoid CPU spinning when at capacity
@@ -148,15 +156,16 @@ class RedisClient:
 
     def register_callback(self, stream: str, group_id: str, callback: Union[Callable[[str, Any], None], Callable[[str, Any], Awaitable[None]]]):
         """Register a callback for a stream. Creates a consumer if one doesn't exist."""
-        # Create a consumer if one doesn't exist
-        if stream not in self._consumers:
-            self.create_consumer(stream, group_id)
-        
-        # Add the callback to the stream's callback list
-        if stream in self._callbacks:
-            self._callbacks[stream].append(callback)
-        else:
-            self._callbacks[stream] = [callback]
+        with self._callback_lock:
+            # Create a consumer if one doesn't exist
+            if stream not in self._consumers:
+                self.create_consumer(stream, group_id)
+            
+            # Add the callback to the stream's callback list
+            if stream in self._callbacks:
+                self._callbacks[stream].append(callback)
+            else:
+                self._callbacks[stream] = [callback]
 
     # def handle_messages_sync(self, redis_response, stream:str, group_id:str):
     #     """process messages serially, executing callbacks serially as well"""
@@ -194,7 +203,8 @@ class RedisClient:
                 )
                 
                 # Track the task
-                self._running_tasks[stream] += 1
+                with self._task_count_locks[stream]:
+                    self._running_tasks[stream] += 1
                 
                 # Add done callback to remove task from tracking
                 task.add_done_callback(
@@ -209,8 +219,10 @@ class RedisClient:
     
     def _decrement_task_count(self, stream: str):
         """Decrement the task count for a stream."""
-        if stream in self._running_tasks and self._running_tasks[stream] > 0:
-            self._running_tasks[stream] -= 1
+        if stream in self._task_count_locks:
+            with self._task_count_locks[stream]:
+                if stream in self._running_tasks and self._running_tasks[stream] > 0:
+                    self._running_tasks[stream] -= 1
 
     async def _process_message(self, stream: str, group_id: str, msg_id: str, val: Any):
         """Process a single message by executing all callbacks and then acknowledging."""
@@ -233,17 +245,21 @@ class RedisClient:
 
     def stop_consumer(self, stream: str):
         """Stop a consumer thread and clean up resources."""
-        if stream in self._stop_flags:
-            self._stop_flags[stream] = True
-            self._consumers[stream].join()
-            del self._consumers[stream]
-            del self._callbacks[stream]
-            del self._stop_flags[stream]
-            
-            if stream in self._max_concurrent_tasks:
-                del self._max_concurrent_tasks[stream]
-            if stream in self._running_tasks:
-                del self._running_tasks[stream]
+        with self._consumer_lock:
+            if stream in self._stop_flags:
+                self._stop_flags[stream] = True
+                self._consumers[stream].join()
+                del self._consumers[stream]
+                del self._callbacks[stream]
+                del self._stop_flags[stream]
+                
+                if stream in self._max_concurrent_tasks:
+                    del self._max_concurrent_tasks[stream]
+                if stream in self._running_tasks:
+                    del self._running_tasks[stream]
+                if stream in self._task_count_locks:
+                    del self._task_count_locks[stream]
 
 
 redis_client = RedisClient()  # module level singleton instance
+    
