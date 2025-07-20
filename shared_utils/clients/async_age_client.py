@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
 from psycopg import AsyncConnection
-from .utils.db_client_base import DBClientBase
+from .utils.age_client_base import AGEClientBase
 
-class AsyncAGEClient(DBClientBase):
+class AsyncAGEClient(AGEClientBase):
     """AGE client for connecting to a PostgreSQL database with Apache AGE extension.
     Requires environment variables:
     - POSTGRES_USER: The username for the database.
@@ -11,10 +11,12 @@ class AsyncAGEClient(DBClientBase):
     - POSTGRES_PORT: The port of the database (default: 5432).
     - POSTGRES_DB: The name of the database.
     """
+    def __init__(self):
+        super().__init__()
 
     @asynccontextmanager
-    async def scoped_connection(self):
-        """Scoped connection with auto commit/rollback/close."""
+    async def managed_connection(self):
+        """context-managed async connection with auto commit/rollback/close."""
         conn: AsyncConnection = await AsyncConnection.connect(**self.connection_params)
         try:
             await self._setup_age_session(conn)
@@ -26,7 +28,7 @@ class AsyncAGEClient(DBClientBase):
         finally:
             await conn.close()
 
-    async def connect(self) -> AsyncConnection:
+    async def create_connection(self) -> AsyncConnection:
         """Caller is responsible for commit/rollback/close."""
         conn: AsyncConnection = await AsyncConnection.connect(**self.connection_params)
         self._setup_age_session(conn)

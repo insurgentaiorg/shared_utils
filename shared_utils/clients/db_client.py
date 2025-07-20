@@ -1,7 +1,6 @@
-import os
 from contextlib import contextmanager
-from sqlmodel import Session, create_engine
 from .utils.db_client_base import DBClientBase
+from sqlmodel import Session, create_engine
 
 class DBClient(DBClientBase):
     """Database client for connecting to a Postgres database.
@@ -24,13 +23,13 @@ class DBClient(DBClientBase):
         try:
             yield session
             session.commit()
-        except:
+        except Exception:
             session.rollback()
             raise
         finally:
             session.close()
 
-    def get_persistent_session(self) -> Session:
+    def get_session(self) -> Session:
         """Caller is responsible for commit/rollback/close."""
         return Session(self.engine)
 

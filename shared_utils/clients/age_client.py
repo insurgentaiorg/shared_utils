@@ -1,9 +1,9 @@
 from contextlib import contextmanager
 import psycopg
 from psycopg import Connection
-from .utils.db_client_base import DBClientBase
+from .utils.age_client_base import AGEClientBase
 
-class AGEClient(DBClientBase):
+class AGEClient(AGEClientBase):
     """AGE client for connecting to a PostgreSQL database with Apache AGE extension.
     Requires environment variables:
     - POSTGRES_USER: The username for the database.
@@ -12,10 +12,12 @@ class AGEClient(DBClientBase):
     - POSTGRES_PORT: The port of the database (default: 5432).
     - POSTGRES_DB: The name of the database.
     """
+    def __init__(self):
+        super().__init__()
 
     @contextmanager
-    def scoped_connection(self):
-        """Scoped connection with auto commit/rollback/close."""
+    def managed_connection(self):
+        """context-managed connection with auto commit/rollback/close."""
         conn: Connection = psycopg.connect(**self.connection_params)
         try:
             self._setup_age_session(conn)
@@ -27,7 +29,7 @@ class AGEClient(DBClientBase):
         finally:
             conn.close()
 
-    def connect(self) -> Connection:
+    def create_connection(self) -> Connection:
         """Caller is responsible for commit/rollback/close."""
         conn = psycopg.connect(**self.connection_params)
         self._setup_age_session(conn)

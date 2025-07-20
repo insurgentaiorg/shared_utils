@@ -34,7 +34,7 @@ class AsyncDBClient(DBClientBase):
         finally:
             await session.close()
 
-    async def get_persistent_session(self) -> AsyncSession:
+    async def get_session(self) -> AsyncSession:
         """Get a persistent async session. Caller is responsible for commit/rollback/close."""
         return self.async_session_maker()
 

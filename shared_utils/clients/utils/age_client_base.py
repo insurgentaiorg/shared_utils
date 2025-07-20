@@ -1,20 +1,18 @@
 from abc import ABC, abstractmethod
 from typing import Any, ContextManager
 from postgres_client import PostgresClient
-from sqlmodel import Session, create_engine
 
-
-class DBClientBase():
-    """Abstract base class for postgres database clients."""
+class AGEClientBase(ABC):
+    """Abstract base class for apache age enabeld database clients."""
     def __init__(self):
         self._postgres_client = PostgresClient()
-    
+
     @abstractmethod
-    def managed_session(self) -> ContextManager[Any]:
-        """context-managed session with auto commit/rollback/close."""
+    def managed_connection(self) -> ContextManager[Any]:
+        """context-managed connection with auto commit/rollback/close."""
         pass
 
     @abstractmethod
-    def create_session(self) -> Session:
+    def create_connection(self) -> Any:
         """Caller is responsible for commit/rollback/close."""
         pass
