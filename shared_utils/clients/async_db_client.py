@@ -22,8 +22,8 @@ class AsyncDBClient(DBClientBase):
         )
 
     @asynccontextmanager
-    async def scoped_session(self):
-        """Async context manager with auto commit/rollback/close."""
+    async def managed_session(self):
+        """context-managed async session with auto commit/rollback/close."""
         session = self.async_session_maker()
         try:
             yield session
@@ -34,8 +34,8 @@ class AsyncDBClient(DBClientBase):
         finally:
             await session.close()
 
-    async def get_session(self) -> AsyncSession:
-        """Get a persistent async session. Caller is responsible for commit/rollback/close."""
+    async def create_session(self) -> AsyncSession:
+        """Create a persistent async session. Caller is responsible for commit/rollback/close."""
         return self.async_session_maker()
 
 
