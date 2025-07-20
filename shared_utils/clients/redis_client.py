@@ -235,7 +235,7 @@ class RedisClient:
                         await cb(msg_id, val)
                     else:
                         # Run non-async callback in a thread pool
-                        logging.warning(f"Running non-async callback {cb} in thread pool")
+                        logging.info(f"Running non-async callback {cb} in thread pool")
                         await asyncio.to_thread(cb, msg_id, val)
                 except Exception as e:
                     logging.error(f"Error in callback for stream {stream}: {e}")
