@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "insurgentai_shared_utils"
-version = "0.4.1"
+version = "0.4.2"
 description = "A collection of shared utility functions for InsurgentAI microservices."
 readme = "README.md"
 requires-python = ">=3.12"
