@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 from shared_utils.sql_models import ChunkGraph
 
-def insert_graph(session: Session, graph: ChunkGraph) -> None:
+def insert_chunk_graph(session: Session, graph: ChunkGraph) -> None:
     """
     Inserts a new graph into the database.
 
@@ -17,7 +17,7 @@ def insert_graph(session: Session, graph: ChunkGraph) -> None:
     session.add(graph)
     session.commit()
 
-def get_graph(session: Session, graph_id: UUID) -> Optional[ChunkGraph]:
+def get_chunk_graph(session: Session, graph_id: UUID) -> Optional[ChunkGraph]:
     """
     Retrieves a graph by its ID.
 
@@ -32,7 +32,7 @@ def get_graph(session: Session, graph_id: UUID) -> Optional[ChunkGraph]:
     result = session.exec(statement).first()
     return result if result else None
 
-def get_graph_for_chunk(session: Session, chunk_id: UUID) -> Optional[ChunkGraph]:
+def get_chunk_graph_for_chunk(session: Session, chunk_id: UUID) -> Optional[ChunkGraph]:
     """
     Retrieves the graph associated with a specific chunk.
 
@@ -47,7 +47,7 @@ def get_graph_for_chunk(session: Session, chunk_id: UUID) -> Optional[ChunkGraph
     result = session.exec(statement).first()
     return result if result else None
 
-def get_graphs_for_chunks(session: Session, chunk_ids: List[UUID]) -> List[ChunkGraph]:
+def get_chunk_graphs_for_chunks(session: Session, chunk_ids: List[UUID]) -> List[ChunkGraph]:
     """
     Retrieves the graphs associated with specific chunks.
 
