@@ -6,7 +6,13 @@ class AGEClientBase(ABC):
     """Abstract base class for apache age enabeld database clients."""
     def __init__(self):
         self._postgres_client = PostgresClient()
-
+        # Expose postgres client attributes for easy access
+        self.user = self._postgres_client.user
+        self.password = self._postgres_client.password
+        self.host = self._postgres_client.host
+        self.port = self._postgres_client.port
+        self.dbname = self._postgres_client.dbname
+        
     @abstractmethod
     def managed_connection(self) -> ContextManager[Any]:
         """context-managed connection with auto commit/rollback/close."""
