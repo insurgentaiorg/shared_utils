@@ -132,4 +132,4 @@ class S3Client:
             return False
 
 
-s3_client = S3Client()  # module level singleton instance
+async_s3_client = S3Client()  # module level singleton instance
