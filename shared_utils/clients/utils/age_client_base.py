@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, ContextManager
-from postgres_client import PostgresClient
+from .postgres_client import PostgresClient
 
 class AGEClientBase(ABC):
     """Abstract base class for apache age enabeld database clients."""

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, ContextManager
-from postgres_client import PostgresClient
+from .postgres_client import PostgresClient
 from sqlmodel import Session, create_engine
 
 
