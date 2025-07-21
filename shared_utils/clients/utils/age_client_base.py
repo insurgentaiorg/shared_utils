@@ -12,7 +12,8 @@ class AGEClientBase(ABC):
         self.host = self._postgres_client.host
         self.port = self._postgres_client.port
         self.dbname = self._postgres_client.dbname
-        
+        self.connection_params = self._postgres_client.connection_params
+
     @abstractmethod
     def managed_connection(self) -> ContextManager[Any]:
         """context-managed connection with auto commit/rollback/close."""
