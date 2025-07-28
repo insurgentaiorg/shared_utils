@@ -5,18 +5,54 @@ from psycopg import AsyncConnection, AsyncCursor
 
 WHITESPACE = compile('\s')
 
-# From apache age official repository
-def exec_cypher(conn:Connection, graph_name:str, cypher_stmt:str, cols:list=None, params:tuple=None) ->Cursor :
+
+def _coerce_values_as_str(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Pure function to validate that Cypher param values have a valid string representation."""
+
+    result = {}
+    for key, value in params.items():
+        if not isinstance(value, str):
+            try:
+                result[key] = str(value)
+            except Exception as e:
+                raise ValueError(
+                    f"Invalid value for parameter '{key}': {value}. Value cannot be cast to a string."
+                ) from e
+        else:
+            result[key] = value
+    
+    return result
+
+class CypherParams(BaseModel):
+    """Model for Cypher parameters with strict validation."""
+    params: Annotated[Dict[str,Any], AfterValidator(_coerce_values_as_str)] = None
+
+    def __getitem__(self, key):
+        return self.params[key]
+
+    def __iter__(self):
+        return iter(self.params)
+
+    def __len__(self):
+        return len(self.params)
+    
+    def get(self, key, default=None):
+        return self.params.get(key, default)
+
+    def items(self):
+        return self.params.items()
+    
+def exec_cypher(conn:Connection, graph_name:str, cypher_stmt:str, params:Optional[CypherParams]=None, cols:List[str]=None) -> Cursor :
     if conn == None or conn.closed:
         raise Exception("Connection is not open or is closed")
 
-    cursor:Cursor = conn.cursor()
+    assert graph_name is not None, "Graph name cannot be None"
+
     #clean up the string for parameter injection
     cypher_stmt = cypher_stmt.replace("\n", "")
     cypher_stmt = cypher_stmt.replace("\t", "")
 
     # Simple parameter injection for backend-only use
-    # (not sql injection safe)
     if params:
         cypher = cypher_stmt % params
     else:
@@ -24,34 +60,18 @@ def exec_cypher(conn:Connection, graph_name:str, cypher_stmt:str, cols:list=None
     
     cypher = cypher.strip()
 
-    # prepate the statement (validates)
-    preparedStmt = "SELECT * FROM age_prepare_cypher({graphName},{cypherStmt})"
-    cursor = conn.cursor()
-    try:
-        cursor.execute(sql.SQL(preparedStmt).format(graphName=sql.Literal(graph_name),cypherStmt=sql.Literal(cypher)))
-    except SyntaxError as cause:
-        conn.rollback()
-        raise cause
-    except Exception as cause:
-        conn.rollback()
-        raise Exception("Execution ERR[" + str(cause) +"](" + preparedStmt +")") from cause
-
     # build and execute the cypher statement
-    stmt = build_cypher(graph_name, cypher, cols)
-    cursor = conn.cursor()
+    stmt = _build_cypher(graph_name, cypher, cols)
+
     try:
-        cursor.execute(stmt)
-        return cursor
+        return conn.cursor().execute(stmt)
     except SyntaxError as cause:
-        conn.rollback()
         raise cause
     except Exception as cause:
-        conn.rollback()
-        raise Exception("Execution ERR[" + str(cause) +"](" + stmt +")") from cause
+        raise Exception("Execution error in statement execution: ERR[" + str(cause) +"](" + stmt +")") from cause
 
-# From apache age official repository
-def build_cypher(graphName:str, cypherStmt:str, columns:list) ->str:
-    if graphName == None:
+def _build_cypher(graph_name:str, cypher_stmt:str, columns:list) ->str:
+    if graph_name == None:
         raise Exception("Graph name cannot be None")
     
     columnExp=[]
@@ -67,10 +87,11 @@ def build_cypher(graphName:str, cypherStmt:str, columns:list) ->str:
         columnExp.append('v agtype')
 
     stmtArr = []
-    stmtArr.append("SELECT * from cypher(NULL,NULL) as (")
+    stmtArr.append(f"SELECT * from cypher('{graph_name}',$${cypher_stmt}$$) as (")
     stmtArr.append(','.join(columnExp))
     stmtArr.append(");")
     return "".join(stmtArr)
+
 
 def graph_exists(conn: Connection, graph_name: str) -> bool:
     """Check if the AGE graph with the given name exists."""

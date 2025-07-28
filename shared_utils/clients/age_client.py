@@ -33,6 +33,7 @@ class AGEClient(AGEClientBase):
         """Caller is responsible for commit/rollback/close."""
         conn = psycopg.connect(**self.connection_params)
         self._setup_age_session(conn)
+        conn.commit()  # commit required after setup. SEE: https://github.com/apache/age/issues/2195
         return conn
 
     def _setup_age_session(self, conn: Connection) -> None:
