@@ -1,13 +1,17 @@
 import logging
-from re import compile
+import re
 from typing import Dict, Any, Optional, List, Annotated
 from pydantic import BaseModel, AfterValidator
-from psycopg import sql, Connection, Cursor
+from psycopg import Connection, Cursor
+from psycopg.errors import SyntaxError as PgSyntaxError
 
-WHITESPACE = compile('\s')
+WHITESPACE = re.compile('\s')
+_SQL_INVALID_CHARS = re.compile(r"[\x00-\x1F]")  # ASCII control characters
 
+def _escape_cypher_string(s:str)->str:
+    return s.replace("\\", "\\\\").replace("'", "\\'")
 
-def _coerce_values_as_str(params: Dict[str, Any]) -> Dict[str, Any]:
+def _coerce_values_as_str(params: Dict[str, Any]) -> Dict[str, str]:
     """Pure function to validate that Cypher param values have a valid string representation."""
 
     result = {}
@@ -24,9 +28,22 @@ def _coerce_values_as_str(params: Dict[str, Any]) -> Dict[str, Any]:
     
     return result
 
+def _sanitize_param_strs(params: Dict[str,str]) -> Dict[str,str]:
+    """Coerce values to valid SQL strings, escaping single quotes."""
+    result = {}
+    for key, value in params.items():
+        if not isinstance(value, str):
+            raise ValueError(f"Invalid value for parameter '{key}': {value}. Value must be a string.")
+          
+        clean = _SQL_INVALID_CHARS.sub('', value)
+        escaped = _escape_cypher_string(clean)
+        result[key] = escaped
+
+    return result
+
 class CypherParams(BaseModel):
     """Model for Cypher parameters with strict validation."""
-    params: Annotated[Dict[str,Any], AfterValidator(_coerce_values_as_str)] = None
+    params: Annotated[Dict[str,Any], AfterValidator(_coerce_values_as_str), AfterValidator(_sanitize_param_strs)] = None
 
     def __getitem__(self, key):
         return self.params[key]
@@ -43,11 +60,13 @@ class CypherParams(BaseModel):
     def items(self):
         return self.params.items()
     
-def exec_cypher(conn:Connection, graph_name:str, cypher_stmt:str, params:Optional[CypherParams]=None, cols:List[str]=None) -> Cursor :
-    if conn == None or conn.closed:
+def exec_cypher(cursor:Cursor, graph_name:str, cypher_stmt:str, params:Optional[CypherParams]=None, cols:Optional[List[str]]=None) -> Cursor :
+    
+    if cursor == None or cursor.closed:
         raise Exception("Connection is not open or is closed")
 
-    assert graph_name is not None, "Graph name cannot be None"
+    if graph_name is None:
+        raise Exception("Graph name cannot be None")
 
     #clean up the string for parameter injection
     cypher_stmt = cypher_stmt.replace("\n", "")
@@ -65,13 +84,13 @@ def exec_cypher(conn:Connection, graph_name:str, cypher_stmt:str, params:Optiona
     stmt = _build_cypher(graph_name, cypher, cols)
 
     try:
-        return conn.cursor().execute(stmt)
-    except SyntaxError as cause:
+        return cursor.execute(stmt)
+    except PgSyntaxError as cause:
         raise cause
     except Exception as cause:
         raise Exception("Execution error in statement execution: ERR[" + str(cause) +"](" + stmt +")") from cause
 
-def _build_cypher(graph_name:str, cypher_stmt:str, columns:list) ->str:
+def _build_cypher(graph_name:str, cypher_stmt:str, columns:Optional[List[str]]) ->str:
     if graph_name == None:
         raise Exception("Graph name cannot be None")
     
@@ -87,12 +106,7 @@ def _build_cypher(graph_name:str, cypher_stmt:str, columns:list) ->str:
     else:
         columnExp.append('v agtype')
 
-    stmtArr = []
-    stmtArr.append(f"SELECT * from cypher('{graph_name}',$${cypher_stmt}$$) as (")
-    stmtArr.append(','.join(columnExp))
-    stmtArr.append(");")
-    return "".join(stmtArr)
-
+    return f"SELECT * FROM cypher('{graph_name}',$${cypher_stmt}$$) AS ({','.join(columnExp)});"
 
 def graph_exists(conn: Connection, graph_name: str) -> bool:
     """Check if the AGE graph with the given name exists."""
