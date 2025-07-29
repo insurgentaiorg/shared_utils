@@ -1,9 +1,8 @@
 import logging
 from re import compile
-from typing import Dict, Any, Optional, List
-from pydantic import BaseModel, AfterValidator, Annotated
+from typing import Dict, Any, Optional, List, Annotated
+from pydantic import BaseModel, AfterValidator
 from psycopg import sql, Connection, Cursor
-from psycopg import AsyncConnection, AsyncCursor
 
 WHITESPACE = compile('\s')
 
