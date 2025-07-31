@@ -1,6 +1,8 @@
 from uuid import UUID
 from functools import wraps
+from unicodedata import normalize
 import inspect
+import re
 
 def deserialize_event(contract_class):
     """
@@ -41,3 +43,27 @@ def to_age_graph_id(u: UUID) -> str:
     - Contains only valid identifier characters (letters, digits, underscores)
     """
     return f"{str(u).replace('-', '_')}"
+
+def _normalize_entity_id(name: str) -> str:
+    """
+    Normalize arbitrary entity names into deterministic string IDs.
+    - Strips accents
+    - Lowercases
+    - Replaces non-alphanumeric runs with a single underscore
+    - Trims leading/trailing underscores
+    - Collapses internal whitespace
+    """
+    # Normalize Unicode characters (e.g., é -> e)
+    name = normalize('NFKD', name)
+    name = name.encode('ascii', 'ignore').decode('ascii')
+    
+    # Lowercase
+    name = name.lower()
+
+    # Replace any sequence of non-alphanumeric characters with underscore
+    name = re.sub(r'[^a-z0-9]+', '_', name)
+
+    # Trim leading/trailing underscores
+    name = name.strip('_')
+
+    return name
