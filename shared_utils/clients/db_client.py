@@ -17,7 +17,7 @@ class DBClient(DBClientBase):
         self.engine = create_engine(self.database_url, echo=False)
 
     @contextmanager
-    def scoped_session(self):
+    def managed_session(self):
         """Scoped session with auto commit/rollback/close."""
         session = Session(self.engine)
         try:
@@ -29,7 +29,7 @@ class DBClient(DBClientBase):
         finally:
             session.close()
 
-    def get_session(self) -> Session:
+    def create_session(self) -> Session:
         """Caller is responsible for commit/rollback/close."""
         return Session(self.engine)
 
