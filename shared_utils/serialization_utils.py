@@ -44,7 +44,7 @@ def to_age_graph_id(u: UUID) -> str:
     """
     return f"{str(u).replace('-', '_')}"
 
-def _normalize_entity_id(name: str) -> str:
+def normalize_entity_id(name: str) -> str:
     """
     Normalize arbitrary entity names into deterministic string IDs.
     - Strips accents
